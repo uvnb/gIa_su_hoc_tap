@@ -25,7 +25,23 @@ uvicorn app.main:app --host 0.0.0.0 --port 8080
 Chưa có khóa API? Trong `.env` đặt `DEFAULT_PROVIDER=mock` và mọi dòng `*_PROVIDER=mock` → chạy giả lập miễn phí.
 Chi tiết: [backend/README.md](backend/README.md).
 
-## 2. Cài app lên máy tính bảng (build trên GitHub – không cần cài Flutter)
+## 2. Dùng trên máy tính bảng bằng trình duyệt (nhanh nhất – đang dùng)
+
+1. Trên máy tính: `.\run_backend.ps1` → in ra địa chỉ, ví dụ `http://192.168.0.100:8090` (phục vụ cả giao diện lẫn API).
+2. Trên tablet (cùng Wi-Fi), **một lần duy nhất**: Chrome → `chrome://flags/#unsafely-treat-insecure-origin-as-secure`
+   → gõ `http://192.168.0.100:8090` → **Enabled** → **Relaunch** (để dùng được camera, micro, mã PIN).
+3. Chrome → mở `http://192.168.0.100:8090` → menu ⋮ → **Thêm vào màn hình chính** → mở app từ biểu tượng (toàn màn hình).
+
+Sửa code app xong thì build lại bản web (không cần khởi động lại backend):
+```powershell
+cd app
+D:\flutter\bin\flutter.bat build web --release --no-web-resources-cdn --dart-define=APP_SECRET=cutomo-local
+```
+
+## 2a. Cài app lên máy tính bảng (build APK trên GitHub)
+
+> Workflow đang **tạm tắt** vì tài khoản GitHub bị khóa thanh toán. Xử lý xong Billing thì bật lại:
+> `D:\tools\gh\bin\gh.exe workflow enable build-apk.yml -R DMTam27/cu-to-mo-app`
 
 **a) Bật backend trên máy tính** (máy tính và tablet cùng Wi-Fi):
 

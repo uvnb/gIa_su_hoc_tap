@@ -38,6 +38,8 @@ if (-not $ok) {
     return
 }
 Write-Host "Backend đang chạy ($(if ($Real) {'AI THẬT – tốn phí'} else {'GIẢ LẬP – miễn phí'}))." -ForegroundColor Green
-foreach ($ip in $ips) { Write-Host "  Địa chỉ cho máy tính bảng: http://${ip}:$Port" -ForegroundColor Cyan }
-Write-Host "  Kiểm tra trên tablet: mở Chrome → http://<địa chỉ trên>/v1/health"
+foreach ($ip in $ips) { Write-Host "  Mở trên máy tính bảng (Chrome): http://${ip}:$Port" -ForegroundColor Cyan }
+if (-not (Test-Path (Join-Path $root 'app\build\web\index.html'))) {
+    Write-Host "  (Chưa có bản web – build: cd app; D:\flutter\bin\flutter.bat build web --release --no-web-resources-cdn --dart-define=APP_SECRET=cutomo-local)" -ForegroundColor Yellow
+}
 Write-Host "Tắt backend: đóng cửa sổ PowerShell có tiêu đề '$title'."
