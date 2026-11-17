@@ -26,7 +26,8 @@ class ApiClient {
   ApiClient(String baseUrl, String appSecret)
       : _dio = Dio(BaseOptions(
           baseUrl: baseUrl,
-          connectTimeout: const Duration(seconds: 10),
+          // Không tới được máy chủ thì báo nhanh (≈5 giây) thay vì để bé chờ lâu.
+          connectTimeout: const Duration(seconds: 4),
           sendTimeout: const Duration(seconds: 20),
           receiveTimeout: const Duration(seconds: 45),
           headers: {'x-app-secret': appSecret},
@@ -35,8 +36,9 @@ class ApiClient {
   final Dio _dio;
 
   // ------------------------------------------------------------------ tiện ích
-  /// FR-71: tự thử lại tối đa 3 lần khi mạng chập chờn (chỉ lỗi kết nối – yêu cầu chưa tới máy chủ).
-  Future<Response> _send(Future<Response> Function() f, {int times = 3}) async {
+  /// FR-71: tự thử lại khi mạng chập chờn (chỉ lỗi kết nối – yêu cầu chưa tới máy chủ).
+  /// 2 lần × 4 giây: đủ vượt một lần chập chờn mà bé không phải chờ lâu khi máy chủ tắt.
+  Future<Response> _send(Future<Response> Function() f, {int times = 2}) async {
     for (var i = 0;; i++) {
       try {
         return await f();
@@ -45,7 +47,7 @@ class ApiClient {
             e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.sendTimeout;
         if (connection && i < times - 1) {
-          await Future.delayed(Duration(milliseconds: 800 * (1 << i)));
+          await Future.delayed(const Duration(milliseconds: 500));
           continue;
         }
         if (connection || e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.unknown) {

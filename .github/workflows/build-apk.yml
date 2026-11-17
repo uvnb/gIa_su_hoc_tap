@@ -43,6 +43,8 @@ jobs:
   android-apk:
     name: App – build APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # để cập nhật trang tải (Releases)
     env:
       API_BASE_URL: ${{ github.event.inputs.api_base_url || 'http://192.168.0.100:8090' }}
       APP_SECRET: ${{ github.event.inputs.app_secret || 'cutomo-local' }}
@@ -96,3 +98,15 @@ jobs:
           name: cu-to-mo-apk
           path: app/cu-to-mo-*.apk
           retention-days: 14
+
+      # Cập nhật trang tải: mã QR (…/releases/download/latest-apk/cu-to-mo.apk) luôn ra bản mới nhất.
+      - name: Phát hành bản mới nhất
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp cu-to-mo-*.apk cu-to-mo.apk
+          gh release delete latest-apk -y --cleanup-tag -R "$GITHUB_REPOSITORY" || true
+          gh release create latest-apk cu-to-mo.apk -R "$GITHUB_REPOSITORY" \
+            --title "Cú Tò Mò – bản cài Android" \
+            --notes "Bản build #${GITHUB_RUN_NUMBER}. Trên máy tính bảng: tải cu-to-mo.apk → mở → Cài đặt."
