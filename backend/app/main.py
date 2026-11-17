@@ -85,8 +85,8 @@ def _parent_ok(device_id: str, token: Optional[str]) -> None:
 
 # ------------------------------ tiện ích ------------------------------
 
-def _clean_image(raw: bytes) -> bytes:
-    """Kiểm tra là ảnh thật, xoay đúng chiều, thu nhỏ ≤ 1600px, mã hóa lại JPEG (xóa EXIF/GPS)."""
+def _clean_image(raw: bytes, max_size: tuple[int, int] = (1600, 1600)) -> bytes:
+    """Kiểm tra là ảnh thật, xoay đúng chiều, thu nhỏ (mặc định ≤ 1600px), mã hóa lại JPEG (xóa EXIF/GPS)."""
     from PIL import Image, ImageOps, UnidentifiedImageError
     if len(raw) > MAX_IMAGE_BYTES:
         raise HTTPException(413, "Ảnh quá lớn")
@@ -96,7 +96,7 @@ def _clean_image(raw: bytes) -> bytes:
         im = im.convert("RGB")
     except (UnidentifiedImageError, OSError):
         raise HTTPException(400, "File không phải ảnh")
-    im.thumbnail((1600, 1600))
+    im.thumbnail(max_size)
     out = io.BytesIO()
     im.save(out, format="JPEG", quality=85)
     return out.getvalue()
@@ -244,7 +244,8 @@ def scratch(session_id: str = Form(...), image: UploadFile = File(...)):
     sess = _load(session_id)
     if not sess.get("problem"):
         raise HTTPException(409, "Chưa chọn câu")
-    jpeg = _clean_image(image.file.read())
+    # Tờ nháp cuộn được nên có thể rất dài: giữ chiều cao (≤ 6000px) để chữ không bị thu quá nhỏ.
+    jpeg = _clean_image(image.file.read(), max_size=(1600, 6000))
     out = tutor.scratch_review(sess, jpeg, "image/jpeg", PROMPTS)
     store.save(session_id, sess)
     return _turn_resp(out)
