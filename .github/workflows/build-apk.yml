@@ -1,0 +1,98 @@
+# Build file APK "Cú Tò Mò" trên máy chủ GitHub (không cần cài Flutter/Android trên máy mình).
+# Kết quả: tab Actions → chọn lần chạy → mục Artifacts → tải "cu-to-mo-apk" (file .zip chứa app-release.apk).
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: "Địa chỉ backend mà máy tính bảng gọi tới (IP máy tính chạy backend trong mạng nhà)"
+        required: true
+        default: "http://192.168.0.100:8090"
+      app_secret:
+        description: "Phải trùng APP_SHARED_SECRET của backend"
+        required: true
+        default: "cutomo-local"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    name: Backend – kiểm thử (gồm chống lộ đáp án)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - run: python -m pytest
+
+  android-apk:
+    name: App – build APK
+    runs-on: ubuntu-latest
+    env:
+      API_BASE_URL: ${{ github.event.inputs.api_base_url || 'http://192.168.0.100:8090' }}
+      APP_SECRET: ${{ github.event.inputs.app_secret || 'cutomo-local' }}
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.50.0
+          cache: true
+
+      # Giữ nguyên khóa ký giữa các lần build → cài bản mới đè lên bản cũ, không mất hồ sơ bé.
+      - name: Khóa ký (giữ cố định)
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: cutomo-debug-keystore-v1
+
+      - name: Tạo khung Android + vá cấu hình
+        run: |
+          flutter create --org vn.dmtlab --project-name cu_to_mo --platforms android .
+          rm -f test/widget_test.dart
+          python3 tool/patch_android.py --allow-http
+
+      - run: flutter pub get
+
+      - name: Phân tích code
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Unit test
+        run: flutter test
+        continue-on-error: true
+
+      - name: Build APK
+        run: flutter build apk --release --dart-define=API_BASE_URL="$API_BASE_URL" --dart-define=APP_SECRET="$APP_SECRET"
+
+      - name: Đổi tên file
+        run: cp build/app/outputs/flutter-apk/app-release.apk "cu-to-mo-${GITHUB_RUN_NUMBER}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cu-to-mo-apk
+          path: app/cu-to-mo-*.apk
+          retention-days: 14

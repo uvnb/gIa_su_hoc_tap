@@ -1,0 +1,9 @@
+# Ghim phiên bản đã kiểm thử (11/2026). Nâng cấp: pip install -U ... rồi chạy lại pytest.
+fastapi==0.162.5
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32
+pydantic==2.14.3
+python-dotenv==1.2.4
+anthropic==2.9.0
+openai==3.52.0
+pillow==12.3.0

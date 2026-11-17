@@ -1,0 +1,35 @@
+{
+  "_ghi_chu": "Hộp bí ẩn hôm nay (FR-42). Chỉ có CÂU HỎI – lời giải do Solver tính trên server, không bao giờ gửi xuống app.",
+  "lop_1_2": [
+    {"kind": "do_vui", "subject": "math", "question": "Trong vườn có 3 con gà và 2 con vịt. Hỏi có tất cả bao nhiêu cái chân?"},
+    {"kind": "do_vui", "subject": "math", "question": "Mẹ có 10 quả cam, mẹ chia đều cho 2 anh em. Hỏi mỗi người được mấy quả?"},
+    {"kind": "do_vui", "subject": "math", "question": "Bình có 8 viên bi. Bình cho An 3 viên bi. Hỏi Bình còn lại bao nhiêu viên bi?"},
+    {"kind": "do_vui", "subject": "math", "question": "Một tuần có 7 ngày. Hôm nay là thứ Hai, 3 ngày nữa là thứ mấy?"},
+    {"kind": "do_vui", "subject": "math", "question": "Trên cây có 6 con chim, 2 con bay đi rồi lại có 3 con bay đến. Hỏi trên cây có bao nhiêu con chim?"},
+    {"kind": "do_vui", "subject": "math", "question": "Số nào lớn nhất có hai chữ số?"},
+    {"kind": "do_vui", "subject": "math", "question": "Hình vuông có mấy cạnh? Hình tam giác có mấy cạnh? Cả hai hình có tất cả bao nhiêu cạnh?"},
+    {"kind": "kham_pha", "subject": "science", "question": "Vì sao trời mưa?"},
+    {"kind": "kham_pha", "subject": "science", "question": "Vì sao lá cây có màu xanh?"},
+    {"kind": "kham_pha", "subject": "science", "question": "Vì sao con mèo hay liếm lông?"},
+    {"kind": "kham_pha", "subject": "science", "question": "Vì sao ban đêm mình nhìn thấy Mặt Trăng?"},
+    {"kind": "kham_pha", "subject": "science", "question": "Vì sao cá sống được ở dưới nước?"},
+    {"kind": "kham_pha", "subject": "science", "question": "Vì sao mình phải đánh răng mỗi ngày?"},
+    {"kind": "do_vui", "subject": "vietnamese", "question": "Tìm một từ chỉ màu sắc bắt đầu bằng chữ x."}
+  ],
+  "lop_3_5": [
+    {"kind": "do_vui", "subject": "math", "question": "Một con nhện có 8 chân. Hỏi 4 con nhện có bao nhiêu chân?"},
+    {"kind": "do_vui", "subject": "math", "question": "Lớp em có 32 bạn, xếp đều thành 4 hàng. Hỏi mỗi hàng có bao nhiêu bạn?"},
+    {"kind": "do_vui", "subject": "math", "question": "Một cái bánh được cắt thành 8 phần bằng nhau. An ăn 3 phần. Hỏi An đã ăn mấy phần của cái bánh (viết dưới dạng phân số)?"},
+    {"kind": "do_vui", "subject": "math", "question": "Bố đi làm lúc 7 giờ 15 phút và đến nơi lúc 7 giờ 50 phút. Hỏi bố đi hết bao nhiêu phút?"},
+    {"kind": "do_vui", "subject": "math", "question": "Một hình chữ nhật có chiều dài 9 cm, chiều rộng 4 cm. Tính chu vi hình chữ nhật đó."},
+    {"kind": "do_vui", "subject": "math", "question": "Tìm số tự nhiên lớn nhất có ba chữ số khác nhau."},
+    {"kind": "do_vui", "subject": "math", "question": "Một năm có 12 tháng. Hỏi 3 năm có bao nhiêu tháng?"},
+    {"kind": "kham_pha", "subject": "science", "question": "Vì sao có ngày và đêm?"},
+    {"kind": "kham_pha", "subject": "science", "question": "Vì sao nước đá lại nổi trên mặt nước?"},
+    {"kind": "kham_pha", "subject": "science", "question": "Vì sao sấm chớp mình thấy chớp trước rồi mới nghe tiếng sấm?"},
+    {"kind": "kham_pha", "subject": "science", "question": "Vì sao cây cần ánh sáng mặt trời để sống?"},
+    {"kind": "kham_pha", "subject": "science", "question": "Vì sao muối tan trong nước nhưng cát thì không?"},
+    {"kind": "kham_pha", "subject": "science", "question": "Vì sao chim bay được còn con người thì không?"},
+    {"kind": "do_vui", "subject": "vietnamese", "question": "Tìm hai từ trái nghĩa với từ \"chăm chỉ\"."}
+  ]
+}
