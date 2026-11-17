@@ -41,9 +41,14 @@ def make(url: str, out: Path) -> None:
     card.paste(code, ((w - code.width) // 2, 160))
     y = 160 + code.height + 40
     d.text((w // 2, y), url, font=_font(34, True), fill=ORANGE, anchor="mm")
-    d.text((w // 2, y + 50), "Máy tính phải bật · tablet dùng cùng Wi-Fi", font=_font(26), fill=INK, anchor="mm")
-    d.text((w // 2, y + 90), "Lần đầu: bật tùy chọn Chrome (xem README) để dùng camera, micro",
-           font=_font(22), fill=INK, anchor="mm")
+    if url.startswith("https://") and ".ts.net" in url:
+        line1 = "Quét là vào · mở được ở mọi nơi"
+        line2 = "Chỉ cần máy tính ở nhà đang bật"
+    else:
+        line1 = "Máy tính phải bật · tablet dùng cùng Wi-Fi"
+        line2 = "Lần đầu: bấm nút vàng trong app để bật micro & camera"
+    d.text((w // 2, y + 50), line1, font=_font(26), fill=INK, anchor="mm")
+    d.text((w // 2, y + 90), line2, font=_font(22), fill=INK, anchor="mm")
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".tmp.png")
     card.save(tmp)
