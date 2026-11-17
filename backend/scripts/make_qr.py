@@ -40,8 +40,13 @@ def make(url: str, out: Path) -> None:
     d.text((w // 2, 120), "Quét bằng camera hoặc Chrome trên máy tính bảng", font=_font(28), fill=INK, anchor="mm")
     card.paste(code, ((w - code.width) // 2, 160))
     y = 160 + code.height + 40
-    d.text((w // 2, y), url, font=_font(34, True), fill=ORANGE, anchor="mm")
-    if url.startswith("https://") and ".ts.net" in url:
+    shown = url if len(url) <= 44 else url.replace("https://", "")
+    size = 34 if len(shown) <= 44 else max(18, int(34 * 44 / len(shown)))
+    d.text((w // 2, y), shown, font=_font(size, True), fill=ORANGE, anchor="mm")
+    if url.endswith(".apk"):
+        line1 = "Quét để TẢI APP · tải xong mở file → Cài đặt"
+        line2 = "Chrome hỏi thì chọn: Vẫn tải xuống · Cho phép cài từ nguồn này"
+    elif url.startswith("https://") and ".ts.net" in url:
         line1 = "Quét là vào · mở được ở mọi nơi"
         line2 = "Chỉ cần máy tính ở nhà đang bật"
     else:
