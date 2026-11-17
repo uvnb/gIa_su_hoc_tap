@@ -59,6 +59,27 @@ def patch_gradle() -> None:
     sys.exit(1)
 
 
+def patch_lint() -> None:
+    """Tắt lint khi build release: lint của AGP đôi khi tự lỗi khi quét plugin (camera_android_camerax),
+    làm hỏng cả bản build dù code không có vấn đề."""
+    for name in ("build.gradle.kts", "build.gradle"):
+        f = ANDROID / "app" / name
+        if not f.exists():
+            continue
+        s = f.read_text(encoding="utf-8")
+        if "checkReleaseBuilds" in s:
+            return
+        if name.endswith(".kts"):
+            block = "android {\n    lint {\n        checkReleaseBuilds = false\n        abortOnError = false\n    }\n"
+        else:
+            block = "android {\n    lint {\n        checkReleaseBuilds false\n        abortOnError false\n    }\n"
+        new = re.sub(r"^android\s*\{\s*\n", block, s, count=1, flags=re.M)
+        if new != s:
+            f.write_text(new, encoding="utf-8")
+            print(f"✔ {f.relative_to(ROOT)}: tắt lint khi build release")
+        return
+
+
 def patch_main_manifest() -> None:
     f = ANDROID / "app" / "src" / "main" / "AndroidManifest.xml"
     s = f.read_text(encoding="utf-8")
@@ -107,6 +128,7 @@ if __name__ == "__main__":
         print("✘ Chưa có thư mục android/. Chạy: flutter create --org vn.dmtlab --project-name cu_to_mo --platforms android .")
         sys.exit(1)
     patch_gradle()
+    patch_lint()
     patch_main_manifest()
     patch_debug_manifest()
     if "--allow-http" in sys.argv:
