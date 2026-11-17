@@ -21,3 +21,6 @@ app/android/key.properties
 .DS_Store
 Thumbs.db
 .idea/
+
+# Ảnh mã QR sinh ra theo IP máy
+dist/
