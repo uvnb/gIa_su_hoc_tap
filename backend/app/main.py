@@ -19,6 +19,7 @@ from typing import Optional
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from . import store
 from .config import TIERS, settings
@@ -350,3 +351,10 @@ def delete_child(device_id: str, child_id: str, x_parent_token: Optional[str] = 
 def delete_device(device_id: str, x_parent_token: Optional[str] = Header(None)):
     _parent_ok(device_id, x_parent_token)
     return {"deleted_sessions": store.delete_child(device_id, None)}
+
+
+# ------------------------------ giao diện web (mở bằng trình duyệt trên máy tính bảng) ------------------------------
+# Gắn SAU mọi route /v1 để API luôn được ưu tiên. Chưa build web thì bỏ qua.
+if Path(settings.web_dir, "index.html").is_file():
+    app.mount("/", StaticFiles(directory=settings.web_dir, html=True), name="web")
+    log.info("Phục vụ giao diện web từ %s", settings.web_dir)

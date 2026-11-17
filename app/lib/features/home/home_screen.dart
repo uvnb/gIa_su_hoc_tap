@@ -78,18 +78,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Expanded(
                 child: Row(
                   children: [
+                    // FittedBox: màn thấp (trình duyệt có thanh địa chỉ) thì thu nhỏ, không đè lên các nút lớn.
                     Expanded(
                       flex: 5,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          OwlView(mood: _waving ? 'celebrating' : 'idle', size: 230, waving: _waving),
-                          const SizedBox(height: 8),
-                          const OwlSpeech(text: 'Hôm nay mình học gì nào?', maxWidth: 460),
-                        ],
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              OwlView(mood: _waving ? 'celebrating' : 'idle', size: 230, waving: _waving),
+                              const SizedBox(height: 8),
+                              const OwlSpeech(text: 'Hôm nay mình học gì nào?', maxWidth: 460),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                    Expanded(flex: 4, child: Center(child: _growthCard(child))),
+                    Expanded(
+                      flex: 4,
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: FittedBox(fit: BoxFit.scaleDown, child: _growthCard(child)),
+                      ),
+                    ),
                   ],
                 ),
               ),

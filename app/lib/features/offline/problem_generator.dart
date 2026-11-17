@@ -116,7 +116,8 @@ num? parseChildNumber(String input) {
         seg += d;
         last = d;
       }
-      seen = true;
+      // "không" đứng một mình thường là phủ định ("con không hiểu"), chỉ là số 0 khi bé nói đúng "không".
+      if (w != 'không' || words.length == 1) seen = true;
     } else if (w == 'mười') {
       seg += 10;
       last = null;

@@ -52,6 +52,9 @@ class Settings:
     # Đặt CORS_ORIGIN_REGEX=off để tắt hẳn.
     cors_origin_regex: str = field(default_factory=lambda: _env(
         "CORS_ORIGIN_REGEX", r"https?://(localhost|127\.0\.0\.1)(:\d+)?"))
+    # Thư mục bản web của app (flutter build web). Có thì backend phục vụ luôn giao diện ở "/".
+    web_dir: str = field(default_factory=lambda: _env(
+        "WEB_DIR", str(Path(__file__).resolve().parents[2] / "app" / "build" / "web")))
 
     def provider_for(self, role: str) -> str:
         return _env(f"{role}_PROVIDER", _env("DEFAULT_PROVIDER", "anthropic")).lower()

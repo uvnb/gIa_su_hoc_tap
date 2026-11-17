@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 
 /// Hiệu ứng âm thanh ngắn (< 1 giây): pop, ting, tada – nhỏ hơn giọng Cú (mục 6.3).
 class SoundService {
@@ -9,9 +10,13 @@ class SoundService {
   Future<void> init() async {
     for (final name in ['pop', 'ting', 'tada']) {
       final p = AudioPlayer();
-      await p.setPlayerMode(PlayerMode.lowLatency);
-      await p.setReleaseMode(ReleaseMode.stop);
       _players[name] = p;
+      try {
+        if (!kIsWeb) await p.setPlayerMode(PlayerMode.lowLatency); // trình duyệt không hỗ trợ chế độ này
+        await p.setReleaseMode(ReleaseMode.stop);
+      } catch (_) {
+        // vẫn phát được với cấu hình mặc định
+      }
     }
   }
 

@@ -92,14 +92,14 @@ class _AskScreenState extends ConsumerState<AskScreen> {
                               controller: _text,
                               maxLines: 4,
                               minLines: 2,
-                              readOnly: grade < 3, // lớp 1–2: chủ yếu nói; lớp 3–5 gõ được
+                              // Lớp 1–2 chủ yếu nói, nhưng vẫn cho gõ (bố mẹ gõ giúp khi micro không dùng được).
                               style: bodyStyle(26),
                               onChanged: (_) => setState(() {}),
                               decoration: InputDecoration(
                                 border: InputBorder.none,
                                 filled: false,
                                 hintText: grade < 3
-                                    ? 'Chữ Cú nghe được sẽ hiện ở đây'
+                                    ? 'Giữ micro rồi đọc câu hỏi (hoặc bố mẹ gõ giúp)'
                                     : 'Nói hoặc gõ câu hỏi ở đây…',
                               ),
                             ),
