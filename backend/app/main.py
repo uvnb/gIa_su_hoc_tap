@@ -55,6 +55,10 @@ async def lifespan(_: FastAPI):
     stop = threading.Event()
     t = threading.Thread(target=_cleanup_loop, args=(stop,), daemon=True)
     t.start()
+    if settings.ocr_mode != "off":
+        # Nạp sẵn mô hình OCR ở nền để lần chụp bài đầu tiên không phải chờ.
+        from .pipeline import ocr
+        threading.Thread(target=ocr.warm_up, daemon=True).start()
     if settings.app_shared_secret == "change-me":
         log.warning("APP_SHARED_SECRET đang là giá trị mặc định – hãy đổi trong .env trước khi dùng thật!")
     yield

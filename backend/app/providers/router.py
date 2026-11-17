@@ -24,11 +24,23 @@ def _mock() -> LLMProvider:
     return MockProvider()
 
 
+def _compat(name: str) -> Callable[[], LLMProvider]:
+    def make() -> LLMProvider:
+        from .compat_provider import CompatProvider
+        return CompatProvider(name)
+    return make
+
+
 REGISTRY: dict[str, Callable[[], LLMProvider]] = {
     "anthropic": _anthropic,
     "openai": _openai,
+    "deepseek": _compat("deepseek"),
+    "gemini": _compat("gemini"),
+    "openrouter": _compat("openrouter"),
     "mock": _mock,
 }
+_KEY_ENV = {"deepseek": ("DEEPSEEK_API_KEY",), "gemini": ("GEMINI_API_KEY",), "openrouter": ("OPENROUTER_API_KEY",),
+            "anthropic": ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"), "openai": ("OPENAI_API_KEY",)}
 
 _cache: dict[str, LLMProvider] = {}
 _lock = threading.Lock()
@@ -42,10 +54,9 @@ def configured(name: str | None) -> bool:
     """Nhà cung cấp đã có khóa API trên máy chủ chưa (phụ huynh chọn AI chưa có khóa → dùng mặc định)."""
     if not name or name not in REGISTRY:
         return False
-    if name == "anthropic":
-        return bool(os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN"))
-    if name == "openai":
-        return bool(os.getenv("OPENAI_API_KEY"))
+    keys = _KEY_ENV.get(name)
+    if keys:
+        return any(os.getenv(k, "").strip() and not os.getenv(k, "").strip().endswith("...") for k in keys)
     return True
 
 

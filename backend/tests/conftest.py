@@ -7,6 +7,7 @@ os.environ["DEFAULT_PROVIDER"] = "mock"
 for role in ("SOLVER", "TUTOR", "CHECKER", "GUARD"):
     os.environ[f"{role}_PROVIDER"] = "mock"
 os.environ["APP_SHARED_SECRET"] = "test-secret"
+os.environ["OCR_MODE"] = "off"  # test nhanh, không nạp mô hình OCR (test riêng ở test_ocr.py)
 os.environ.pop("MOCK_TUTOR_LEAK", None)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))

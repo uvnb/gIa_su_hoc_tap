@@ -9,7 +9,7 @@ from .. import store
 from ..config import settings
 from ..providers import router
 from ..providers.base import ProviderError
-from . import schemas, vn_numbers as vn
+from . import ocr, schemas, vn_numbers as vn
 from .jsonutil import parse_json, render
 
 log = logging.getLogger("cutomo.solver")
@@ -80,12 +80,28 @@ def solve(image: bytes | None, question_text: str, grade: int, subject: str, pro
         return cached
 
     system = render(prompts["solver"], grade=grade, subject_name=SUBJECT_NAMES.get(subject, subject))
+    provider, model = router.get("SOLVER", provider_name, tier)
+
+    # AI không tự đọc được ảnh (giả lập, DeepSeek…) → OCR tiếng Việt trên máy chủ rồi gửi chữ.
+    ocr_note = ""
+    if image and settings.ocr_mode != "off" and (settings.ocr_mode == "always" or not provider.supports_vision):
+        if ocr.available():
+            text = ocr.image_to_text(image)
+            if not text.strip() and not question_text.strip():
+                return {"readable": False, "problems": []}
+            question_text = (question_text.strip() + "\n" + text).strip()
+            ocr_note = ("\n(Đề được đọc từ ảnh bằng OCR nên có thể sai dấu/sai chữ: hãy sửa lỗi OCR khi chắc chắn, "
+                        "và chép lại đề đã sửa vào trường text.)")
+            if not provider.supports_vision:
+                image = None
+        else:
+            log.warning("Chưa cài OCR (pip install easyocr) – AI hiện tại không đọc được ảnh")
+
     user = f"Lớp {grade}, môn {SUBJECT_NAMES.get(subject, subject)}."
     if question_text.strip():
-        user += f"\nĐề bài dạng chữ: {question_text.strip()}"
+        user += f"\nĐề bài dạng chữ: {question_text.strip()}" + ocr_note
     if image:
         user += "\nẢnh trang vở/sách của bạn nhỏ ở trên. Hãy đọc và giải."
-    provider, model = router.get("SOLVER", provider_name, tier)
     raw = provider.complete(system, user, model=model, role="SOLVER", image_bytes=image,
                             max_tokens=8000, temperature=0, json_schema=schemas.SOLVER,
                             effort=settings.effort_for("SOLVER"))

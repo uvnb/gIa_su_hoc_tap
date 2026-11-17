@@ -51,6 +51,11 @@ def _solve_text(text: str) -> dict:
         return {"mode": "exercise", "type": typ, "answer": ans, "variants": [ans],
                 "steps": [f"Tìm hai số: {nums[0]} và {nums[1]}", f"Làm phép tính {nums[0]} {op} {nums[1]}"],
                 "tool": tool, "key": nums}
+    if len(re.findall(r"[^\W\d_]{2,}", t)) >= 4:
+        # Đề bằng chữ mà giả lập không giải được → vẫn cho trò chuyện (AI thật mới giải đúng).
+        return {"mode": "discovery", "type": "kham_pha",
+                "answer": "Cú đang ở chế độ giả lập nên chưa giải được câu này.", "variants": [],
+                "steps": ["Đọc kỹ đề", "Tìm thông tin đề cho"], "tool": "none"}
     return {"mode": "exercise", "type": "khac", "answer": "?", "variants": [], "steps": [], "tool": "none"}
 
 
@@ -68,10 +73,10 @@ def _problem_from(text: str, pid: int = 1) -> dict:
 # ----------------------------- handler mặc định -----------------------------
 
 def _solver(system: str, user: str, image: Optional[bytes]) -> dict:
-    m = re.search(r"Đề bài dạng chữ:\s*(.*?)(?:\nẢnh trang vở|$)", user, re.S)
+    m = re.search(r"Đề bài dạng chữ:\s*(.*?)(?:\n\(Đề được đọc|\nẢnh trang vở|$)", user, re.S)
     q = m.group(1).strip() if m else ""
     if not q and image:
-        q = DEMO_PROBLEM  # mock không đọc được ảnh → dùng bài mẫu
+        q = DEMO_PROBLEM  # chỉ khi tắt OCR (OCR_MODE=off): giả lập không đọc được ảnh → dùng bài mẫu
     if not q:
         return {"readable": False, "problems": []}
     parts = [p.strip() for p in re.split(r"\n+|(?=\bBài \d+[:.])", q) if p.strip()]
@@ -176,6 +181,7 @@ DEFAULT_HANDLERS: dict[str, Handler] = {
 
 class MockProvider(LLMProvider):
     name = "mock"
+    supports_vision = False  # máy chủ OCR ảnh thành chữ trước khi gửi
 
     def __init__(self) -> None:
         self.handlers: dict[str, Handler] = dict(DEFAULT_HANDLERS)

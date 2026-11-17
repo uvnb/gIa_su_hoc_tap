@@ -45,6 +45,8 @@ class Settings:
     max_turns_per_problem: int = field(default_factory=lambda: _int("MAX_TURNS_PER_PROBLEM", 12))
     max_sessions_per_day: int = field(default_factory=lambda: _int("MAX_SESSIONS_PER_DEVICE_PER_DAY", 80))
     guard_mode: str = field(default_factory=lambda: _env("GUARD_MODE", "smart"))  # smart | always
+    # OCR ảnh → chữ trên máy chủ: auto = chỉ khi AI không đọc được ảnh · always · off
+    ocr_mode: str = field(default_factory=lambda: _env("OCR_MODE", "auto"))
     default_tier: str = field(default_factory=lambda: _env("DEFAULT_TIER", "can_bang"))
     anthropic_server_fallback: bool = field(default_factory=lambda: _env("ANTHROPIC_SERVER_FALLBACK", "1") == "1")
     openai_temperature: str = field(default_factory=lambda: _env("OPENAI_TEMPERATURE", ""))
@@ -80,6 +82,9 @@ class Settings:
             return _env("OPENAI_CHAT_MODEL", _env(f"{role}_MODEL") if self.provider_for(role) == "openai" else "")
         if provider == "mock":
             return "mock"
+        if provider in ("deepseek", "gemini", "openrouter"):
+            from .providers.compat_provider import model_for
+            return model_for(provider)
         return _env(f"{role}_MODEL")
 
     def effort_for(self, role: str) -> str:

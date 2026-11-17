@@ -15,6 +15,8 @@ class ProviderRefusal(ProviderError):
 
 class LLMProvider(ABC):
     name: str = "base"
+    #: Đọc được ảnh trực tiếp không. False → máy chủ OCR ảnh thành chữ trước khi gửi.
+    supports_vision: bool = True
 
     @abstractmethod
     def complete(
