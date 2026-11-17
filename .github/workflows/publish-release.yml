@@ -1,0 +1,40 @@
+# Đưa file APK của một lần build lên trang Releases để máy tính bảng quét QR là tải được:
+#   https://github.com/<chủ-repo>/<repo>/releases/download/latest-apk/cu-to-mo.apk
+name: Publish APK
+
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/publish-release.yml"]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "ID lần chạy 'Build APK' cần phát hành"
+        required: true
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      RUN_ID: ${{ github.event.inputs.run_id || '44085254172' }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cu-to-mo-apk
+          run-id: ${{ env.RUN_ID }}
+          github-token: ${{ github.token }}
+          path: apk
+      - name: Tạo bản phát hành latest-apk
+        run: |
+          f=$(ls apk/*.apk | head -1)
+          cp "$f" cu-to-mo.apk
+          ls -la cu-to-mo.apk
+          gh release delete latest-apk -y --cleanup-tag -R "$GITHUB_REPOSITORY" || true
+          gh release create latest-apk cu-to-mo.apk -R "$GITHUB_REPOSITORY" \
+            --title "Cú Tò Mò – bản cài Android" \
+            --notes "Bản thử nghiệm. Trên máy tính bảng: tải cu-to-mo.apk → mở → Cài đặt."
