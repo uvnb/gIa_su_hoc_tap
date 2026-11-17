@@ -47,6 +47,16 @@ if (-not $ok) {
 Write-Host "Backend đang chạy ($(if ($Real) {'AI THẬT – tốn phí'} else {'GIẢ LẬP – miễn phí'}))." -ForegroundColor Green
 foreach ($ip in $ips) { Write-Host "  Mở trên máy tính bảng (Chrome): http://${ip}:$Port" -ForegroundColor Cyan }
 
+# Máy tính bảng cắm cáp USB (đã bật Gỡ lỗi USB) → nối đường cáp: 127.0.0.1:8090 trên tablet = máy chủ này.
+$adb = 'D:\tools\platform-tools\adb.exe'
+if (Test-Path $adb) {
+    $dev = (& $adb devices) | Where-Object { $_ -match '\sdevice\s*$' }
+    if ($dev) {
+        & $adb reverse "tcp:$Port" "tcp:$Port" | Out-Null
+        Write-Host "  Đã nối cáp USB với máy tính bảng – app dùng được cả khi khác mạng Wi-Fi." -ForegroundColor Cyan
+    }
+}
+
 # Mã QR cho máy tính bảng quét – tạo lại theo IP hiện tại; IP đổi thì tự mở ảnh QR mới.
 $ip = @($ips)[0]
 if ($ip) {
