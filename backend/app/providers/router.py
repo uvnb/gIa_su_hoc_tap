@@ -1,6 +1,7 @@
 """Chọn nhà cung cấp + model cho từng vai trò. Đổi ChatGPT ↔ Claude bằng cấu hình, không cần sửa app."""
 from __future__ import annotations
 
+import os
 import threading
 from typing import Callable
 
@@ -37,12 +38,28 @@ def available() -> list[str]:
     return sorted(REGISTRY)
 
 
+def configured(name: str | None) -> bool:
+    """Nhà cung cấp đã có khóa API trên máy chủ chưa (phụ huynh chọn AI chưa có khóa → dùng mặc định)."""
+    if not name or name not in REGISTRY:
+        return False
+    if name == "anthropic":
+        return bool(os.getenv("ANTHROPIC_API_KEY") or os.getenv("ANTHROPIC_AUTH_TOKEN"))
+    if name == "openai":
+        return bool(os.getenv("OPENAI_API_KEY"))
+    return True
+
+
 def instance(name: str) -> LLMProvider:
     if name not in REGISTRY:
         raise ProviderError(f"Nhà cung cấp AI không hỗ trợ: {name}")
     with _lock:
         if name not in _cache:
-            _cache[name] = REGISTRY[name]()
+            try:
+                _cache[name] = REGISTRY[name]()
+            except ProviderError:
+                raise
+            except Exception as e:  # thiếu khóa, thiếu thư viện… → báo lỗi gọn, không làm sập máy chủ
+                raise ProviderError(f"Không khởi tạo được nhà cung cấp {name}: {e}") from e
         return _cache[name]
 
 

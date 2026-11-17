@@ -52,7 +52,7 @@ def test_non_image_rejected(client):
 def test_unreadable(client):
     s = start_text(client, "....")
     assert s["readable"] is False and s["session_id"] is None
-    assert "chụp lại" in s["owl"]["say"]
+    assert "chưa hiểu câu hỏi" in s["owl"]["say"]  # hỏi bằng chữ → không nhắc tới "ảnh mờ"
 
 
 def test_multiple_problems_select_flow(client):
@@ -129,6 +129,22 @@ def test_parent_flow_report_answer_delete(client):
     assert d["deleted_sessions"] == 2
     rep = client.get(f"/v1/parent/report?device_id={dev}&child_id=c1&period=week", headers=ph).json()
     assert rep["problems_total"] == 0
+
+
+def test_unconfigured_provider_falls_back_to_default(client, monkeypatch):
+    """Phụ huynh chọn Claude/ChatGPT nhưng máy chủ chưa có khóa → vẫn chạy bằng nhà cung cấp mặc định."""
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    for prov in ("anthropic", "openai"):
+        s = start_text(client, "Lan có 7 cái kẹo, mẹ cho thêm 5 cái. Hỏi Lan có tất cả bao nhiêu cái kẹo?",
+                       provider=prov)
+        assert s["readable"] is True
+
+
+def test_unclear_text_question_message(client):
+    s = start_text(client, "abc xyz")
+    assert s["readable"] is False and "chưa hiểu câu hỏi" in s["owl"]["say"]
 
 
 def test_health(client):

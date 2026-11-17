@@ -138,7 +138,7 @@ def _activate(sess: dict, problem: dict) -> str:
 @app.get("/v1/health")
 def health():
     return {"ok": True, "providers": router.available(), "default_provider": settings.provider_for("TUTOR"),
-            "tiers": list(TIERS)}
+            "configured_providers": [p for p in router.available() if router.configured(p)], "tiers": list(TIERS)}
 
 
 @app.post("/v1/device/register", response_model=DeviceRegistration, dependencies=[Depends(require_app)])
@@ -155,7 +155,8 @@ def start(grade: int = Form(...), subject: str = Form("math"), child_nickname: s
     if not 1 <= grade <= 5:
         raise HTTPException(422, "grade phải từ 1 đến 5")
     subject = subject if subject in SUBJECTS else "math"
-    provider = provider if provider in router.available() else None
+    # Phụ huynh chọn AI chưa có khóa trên máy chủ → dùng nhà cung cấp mặc định thay vì báo lỗi.
+    provider = provider if router.configured(provider) else None
     tier = tier if tier in TIERS else None
     if device_id and store.count_sessions_today(device_id) >= settings.max_sessions_per_day:
         return JSONResponse(status_code=429, content={"detail": "Hôm nay bạn học nhiều lắm rồi! Mai mình học tiếp nhé."})
@@ -174,9 +175,9 @@ def start(grade: int = Form(...), subject: str = Form("math"), child_nickname: s
         log.error("solver lỗi: %s", e)
         raise HTTPException(503, "Cú đang bận, thử lại sau nhé")
     if not result.get("readable") or not result.get("problems"):
-        return StartResponse(readable=False, state="unreadable",
-                             owl=Owl(say="Ảnh hơi mờ, Cú chưa đọc được. Mình chụp lại gần hơn và sáng hơn nhé!",
-                                     mood="encouraging"))
+        say = ("Ảnh hơi mờ, Cú chưa đọc được. Mình chụp lại gần hơn và sáng hơn nhé!" if jpeg
+               else "Cú chưa hiểu câu hỏi này. Bạn đọc lại rõ hơn, hoặc nhờ bố mẹ gõ giúp nhé!")
+        return StartResponse(readable=False, state="unreadable", owl=Owl(say=say, mood="encouraging"))
     problems = result["problems"]
     sid, sess = _new_session(device_id, child_id, child_nickname, grade, subject, provider, tier, problems)
     briefs = [ProblemBrief(id=p["id"], text=p["text"]) for p in problems]

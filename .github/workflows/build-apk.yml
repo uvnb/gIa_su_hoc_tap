@@ -5,6 +5,7 @@ name: Build APK
 on:
   push:
     branches: [main]
+    paths: ["app/**", "backend/**", ".github/workflows/build-apk.yml"]
   workflow_dispatch:
     inputs:
       api_base_url:

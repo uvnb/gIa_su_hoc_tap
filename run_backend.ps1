@@ -55,6 +55,14 @@ if (Test-Path $adb) {
         & $adb reverse "tcp:$Port" "tcp:$Port" | Out-Null
         Write-Host "  Đã nối cáp USB với máy tính bảng – app dùng được cả khi khác mạng Wi-Fi." -ForegroundColor Cyan
     }
+    # Chạy ngầm: mỗi lần cắm lại cáp thì tự nối lại (adb reverse mất khi rút cáp).
+    $watching = Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" |
+        Where-Object { $_.CommandLine -match 'cu-usb-watch' }
+    if (-not $watching) {
+        $loop = "# cu-usb-watch`n while (`$true) { & '$adb' wait-for-device; & '$adb' reverse tcp:$Port tcp:$Port | Out-Null; & '$adb' wait-for-disconnect; Start-Sleep 1 }"
+        Start-Process powershell -WindowStyle Hidden -ArgumentList '-NoProfile', '-Command', $loop
+        Write-Host "  Tự nối cáp USB mỗi khi cắm máy tính bảng (chạy ngầm)." -ForegroundColor Cyan
+    }
 }
 
 # Mã QR cho máy tính bảng quét – tạo lại theo IP hiện tại; IP đổi thì tự mở ảnh QR mới.
