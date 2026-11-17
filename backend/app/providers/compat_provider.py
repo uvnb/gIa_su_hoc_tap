@@ -21,21 +21,28 @@ from .base import LLMProvider, ProviderError, ProviderRefusal
 class Preset:
     base_url: str
     key_env: str
-    model: str
+    model: str            # model cho Tutor / Checker / Guard (cần nhanh)
     vision: bool
+    solver_model: str = ""  # model đọc đề + giải (cần chính xác); trống = dùng `model`
+    solver_reasoning: str = ""  # reasoning_effort cho Solver (Gemini: "low")
 
 
 PRESETS: dict[str, Preset] = {
     "deepseek": Preset("https://api.deepseek.com", "DEEPSEEK_API_KEY", "deepseek-chat", False),
+    # Đo 11/2026 (gói miễn phí): 3.1-flash-lite ~1.5s/lượt, trả JSON gọn; 2.5-flash giải chính xác, đọc ảnh tốt.
     "gemini": Preset("https://generativelanguage.googleapis.com/v1beta/openai/", "GEMINI_API_KEY",
-                     "gemini-flash-latest", True),
+                     "gemini-3.1-flash-lite", True, solver_model="gemini-2.5-flash", solver_reasoning="low"),
     "openrouter": Preset("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY", "google/gemma-4-31b-it:free", True),
 }
 
 
-def model_for(name: str) -> str:
+def model_for(name: str, role: str = "TUTOR") -> str:
+    """Thứ tự: {NAME}_{ROLE}_MODEL → {NAME}_MODEL → mặc định của preset theo vai trò."""
     p = PRESETS[name]
-    return os.getenv(f"{name.upper()}_MODEL", "").strip() or p.model
+    env = os.getenv(f"{name.upper()}_{role.upper()}_MODEL", "").strip() or os.getenv(f"{name.upper()}_MODEL", "").strip()
+    if env:
+        return env
+    return (p.solver_model or p.model) if role.upper() == "SOLVER" else p.model
 
 
 class CompatProvider(LLMProvider):
@@ -46,9 +53,11 @@ class CompatProvider(LLMProvider):
         if not key:
             raise ProviderError(f"Thiếu {p.key_env} trong .env")
         self.name = name
+        self.preset = p
         self.supports_vision = os.getenv(f"{name.upper()}_VISION", "1" if p.vision else "0") == "1"
         base = os.getenv(f"{name.upper()}_BASE_URL", "").strip() or p.base_url
-        self.client = OpenAI(api_key=key, base_url=base, timeout=60.0, max_retries=2)
+        # Gói miễn phí hay báo quá tải (503): thử lại 1 lần, chờ tối đa 25s – lỗi thì Cú dùng câu an toàn.
+        self.client = OpenAI(api_key=key, base_url=base, timeout=25.0, max_retries=1)
         import openai
         self._openai = openai
 
@@ -71,6 +80,9 @@ class CompatProvider(LLMProvider):
             kwargs["response_format"] = {"type": "json_object"}
         if temperature is not None:
             kwargs["temperature"] = temperature
+        if role in ("SOLVER", "CHALLENGE") and self.preset.solver_reasoning and model == self.preset.solver_model:
+            # Model "có suy nghĩ": giới hạn mức suy nghĩ để không ăn hết token trước khi kịp trả lời.
+            kwargs["reasoning_effort"] = self.preset.solver_reasoning
         o = self._openai
         try:
             resp = self.client.chat.completions.create(**kwargs)

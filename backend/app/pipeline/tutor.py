@@ -284,8 +284,9 @@ def run_turn(sess: dict, child_input: str, input_mode: str, prompts: dict[str, s
     else:
         say, mood, nxt, actions = _generate(sess, child_input, verdict, notes, prompts)
 
-    # Tutor được đề xuất bậc mới nhưng không nhảy quá 1 bậc so với đầu lượt.
-    if nxt > sess["hint_level"]:
+    # Tutor được đề xuất bậc mới nhưng không nhảy quá 1 bậc so với đầu lượt, và CHỈ khi bé chưa tiến bộ
+    # (mục 3.2: "chỉ leo lên một bậc mỗi lần trẻ chưa tiến bộ") – bé trả lời đúng bước thì giữ nguyên bậc.
+    if nxt > sess["hint_level"] and v in ("incorrect", "dont_know", "asks_for_answer", "off_topic"):
         _bump(sess, min(nxt, max(sess["hint_level"], level_before) + 1))
 
     # Bậc L4: tự mở công cụ trực quan nếu Tutor quên (FR-24)

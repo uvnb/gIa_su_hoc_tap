@@ -74,13 +74,14 @@ def _cache_key(image: bytes | None, question_text: str, grade: int, subject: str
 def solve(image: bytes | None, question_text: str, grade: int, subject: str, prompts: dict[str, str],
           provider_name: str | None = None, tier: str | None = None) -> dict[str, Any]:
     """Trả {"readable": bool, "problems": [...]} – CHỈ dùng nội bộ server."""
-    key = _cache_key(image, question_text, grade, subject, provider_name or "", tier or "")
+    provider, model = router.get("SOLVER", provider_name, tier)
+    # Khóa cache gồm cả nhà cung cấp + model THỰC SỰ dùng: đổi AI thì không dùng lại lời giải cũ.
+    key = _cache_key(image, question_text, grade, subject, f"{provider.name}:{model}", tier or "")
     cached = store.solver_cache_get(key, settings.image_retention_hours)
     if cached is not None:
         return cached
 
     system = render(prompts["solver"], grade=grade, subject_name=SUBJECT_NAMES.get(subject, subject))
-    provider, model = router.get("SOLVER", provider_name, tier)
 
     # AI không tự đọc được ảnh (giả lập, DeepSeek…) → OCR tiếng Việt trên máy chủ rồi gửi chữ.
     ocr_note = ""

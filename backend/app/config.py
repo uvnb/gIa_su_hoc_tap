@@ -84,7 +84,7 @@ class Settings:
             return "mock"
         if provider in ("deepseek", "gemini", "openrouter"):
             from .providers.compat_provider import model_for
-            return model_for(provider)
+            return model_for(provider, role)
         return _env(f"{role}_MODEL")
 
     def effort_for(self, role: str) -> str:
