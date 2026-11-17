@@ -2,13 +2,17 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../models/tutor_models.dart';
 
 /// Mất mạng / không tới được máy chủ → app chuyển sang chế độ offline (FR-70).
 class ApiOffline implements Exception {
   final String message;
-  ApiOffline([this.message = 'offline']);
+
+  /// true = yêu cầu chưa tới được máy chủ (an toàn để thử địa chỉ khác).
+  final bool notReached;
+  ApiOffline(this.message, {this.notReached = false});
   @override
   String toString() => 'ApiOffline($message)';
 }
@@ -24,7 +28,8 @@ class ApiError implements Exception {
 /// Gọi backend "Cú Brain". App KHÔNG có khóa AI và KHÔNG bao giờ nhận đáp án.
 class ApiClient {
   ApiClient(String baseUrl, String appSecret)
-      : _dio = Dio(BaseOptions(
+      : _primary = baseUrl,
+        _dio = Dio(BaseOptions(
           baseUrl: baseUrl,
           // Không tới được máy chủ thì báo nhanh (≈5 giây) thay vì để bé chờ lâu.
           connectTimeout: const Duration(seconds: 4),
@@ -34,11 +39,37 @@ class ApiClient {
         ));
 
   final Dio _dio;
+  final String _primary;
+
+  /// Đường cáp USB: máy tính chạy `adb reverse tcp:8090 tcp:8090` thì 127.0.0.1:8090 trên tablet
+  /// chính là máy chủ trên máy tính – dùng được cả khi Wi-Fi không cho hai máy thấy nhau.
+  static const usbUrl = 'http://127.0.0.1:8090';
+
+  /// Địa chỉ đang dùng (để Góc phụ huynh hiển thị).
+  String get currentBaseUrl => _dio.options.baseUrl;
 
   // ------------------------------------------------------------------ tiện ích
+  /// Gửi yêu cầu; không tới được địa chỉ đang dùng thì thử địa chỉ còn lại (Wi-Fi ↔ cáp USB)
+  /// và nhớ địa chỉ chạy được cho các lần sau.
+  Future<Response> _send(Future<Response> Function() f, {int times = 2}) async {
+    try {
+      return await _sendOnce(f, times: times);
+    } on ApiOffline catch (e) {
+      if (kIsWeb || !e.notReached || _primary == usbUrl) rethrow;
+      final current = _dio.options.baseUrl;
+      _dio.options.baseUrl = current == usbUrl ? _primary : usbUrl;
+      try {
+        return await _sendOnce(f, times: 1);
+      } on ApiOffline {
+        _dio.options.baseUrl = current;
+        rethrow;
+      }
+    }
+  }
+
   /// FR-71: tự thử lại khi mạng chập chờn (chỉ lỗi kết nối – yêu cầu chưa tới máy chủ).
   /// 2 lần × 4 giây: đủ vượt một lần chập chờn mà bé không phải chờ lâu khi máy chủ tắt.
-  Future<Response> _send(Future<Response> Function() f, {int times = 2}) async {
+  Future<Response> _sendOnce(Future<Response> Function() f, {int times = 2}) async {
     for (var i = 0;; i++) {
       try {
         return await f();
@@ -50,8 +81,11 @@ class ApiClient {
           await Future.delayed(const Duration(milliseconds: 500));
           continue;
         }
-        if (connection || e.type == DioExceptionType.receiveTimeout || e.type == DioExceptionType.unknown) {
-          throw ApiOffline(e.message ?? e.type.name);
+        if (connection || e.type == DioExceptionType.unknown) {
+          throw ApiOffline(e.message ?? e.type.name, notReached: true);
+        }
+        if (e.type == DioExceptionType.receiveTimeout) {
+          throw ApiOffline(e.message ?? e.type.name); // đã tới máy chủ – không gửi lại kẻo trùng lượt
         }
         final status = e.response?.statusCode ?? 0;
         final data = e.response?.data;
