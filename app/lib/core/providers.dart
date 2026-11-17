@@ -29,7 +29,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   Future<void> save(AppSettings s) async {
     state = s;
     await _ref.read(localStoreProvider).saveSettings(s);
-    await _ref.read(ttsProvider).apply(rate: s.ttsRate, pitch: s.ttsPitch);
+    await _ref.read(ttsProvider).apply(rate: s.ttsRate, pitch: s.ttsPitch, voice: s.voiceName);
     _ref.read(soundProvider).enabled = s.soundEffects;
   }
 }

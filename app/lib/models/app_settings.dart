@@ -10,10 +10,12 @@ class AppSettings {
   final String provider; // "" = theo server | anthropic | openai
   final String tier; // tiet_kiem | can_bang | thong_minh
   final String serverUrl; // "" = dùng API_BASE_URL lúc build
+  final String voiceName; // giọng TTS tiếng Việt trên máy ("" = mặc định)
+  final String voicePreset; // kiểu giọng: cu_con | co_giao | ban_nho | ong_cu | "" (tự chỉnh)
 
   const AppSettings({
-    this.ttsRate = 0.45,
-    this.ttsPitch = 1.1,
+    this.ttsRate = 0.42,
+    this.ttsPitch = 1.35,
     this.breakMinutes = 20,
     this.dailyLimitMinutes = 45,
     this.bedtime = '21:00',
@@ -22,6 +24,8 @@ class AppSettings {
     this.provider = '',
     this.tier = 'can_bang',
     this.serverUrl = '',
+    this.voiceName = '',
+    this.voicePreset = 'cu_con',
   });
 
   AppSettings copyWith({
@@ -35,6 +39,8 @@ class AppSettings {
     String? provider,
     String? tier,
     String? serverUrl,
+    String? voiceName,
+    String? voicePreset,
   }) =>
       AppSettings(
         ttsRate: ttsRate ?? this.ttsRate,
@@ -47,6 +53,8 @@ class AppSettings {
         provider: provider ?? this.provider,
         tier: tier ?? this.tier,
         serverUrl: serverUrl ?? this.serverUrl,
+        voiceName: voiceName ?? this.voiceName,
+        voicePreset: voicePreset ?? this.voicePreset,
       );
 
   Map<String, dynamic> toMap() => {
@@ -60,6 +68,8 @@ class AppSettings {
         'provider': provider,
         'tier': tier,
         'serverUrl': serverUrl,
+        'voiceName': voiceName,
+        'voicePreset': voicePreset,
       };
 
   factory AppSettings.fromMap(Map<dynamic, dynamic>? m) {
@@ -76,6 +86,8 @@ class AppSettings {
       provider: (m['provider'] as String?) ?? d.provider,
       tier: (m['tier'] as String?) ?? d.tier,
       serverUrl: (m['serverUrl'] as String?) ?? d.serverUrl,
+      voiceName: (m['voiceName'] as String?) ?? d.voiceName,
+      voicePreset: (m['voicePreset'] as String?) ?? '',
     );
   }
 
@@ -97,3 +109,20 @@ class AppSettings {
     return h * 60 + m;
   }
 }
+
+/// Kiểu giọng dễ thương cho trẻ nhỏ: chỉnh cao độ + tốc độ của giọng TTS (miễn phí, chạy trên máy).
+class VoicePreset {
+  final String id;
+  final String emoji;
+  final String label;
+  final double rate;
+  final double pitch;
+  const VoicePreset(this.id, this.emoji, this.label, this.rate, this.pitch);
+}
+
+const voicePresets = [
+  VoicePreset('cu_con', '🐣', 'Cú con dễ thương', 0.42, 1.35),
+  VoicePreset('co_giao', '🌸', 'Cô giáo dịu dàng', 0.44, 1.12),
+  VoicePreset('ban_nho', '🎈', 'Bạn nhỏ vui vẻ', 0.5, 1.55),
+  VoicePreset('ong_cu', '🦉', 'Ông Cú hiền từ', 0.4, 0.88),
+];

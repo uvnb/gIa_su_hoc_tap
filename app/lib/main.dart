@@ -22,7 +22,9 @@ Future<void> main() async {
   final tts = TtsService();
   final sound = SoundService()..enabled = settings.soundEffects;
   // Không chờ TTS/âm thanh để mở app nhanh (NFR-01 < 3 giây). Lỗi ở đây không được làm dừng app.
-  tts.init(rate: settings.ttsRate, pitch: settings.ttsPitch).catchError((Object e) => debugPrint('TTS: $e'));
+  tts
+      .init(rate: settings.ttsRate, pitch: settings.ttsPitch, voice: settings.voiceName)
+      .catchError((Object e) => debugPrint('TTS: $e'));
   sound.init().catchError((Object e) => debugPrint('Âm thanh: $e'));
 
   runApp(ProviderScope(

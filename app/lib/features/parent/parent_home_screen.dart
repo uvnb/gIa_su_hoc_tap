@@ -10,6 +10,7 @@ import '../../models/tutor_models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pin_pad.dart';
 import 'parent_gate_screen.dart';
+import 'voice_picker.dart';
 
 /// Góc phụ huynh (nhóm F): báo cáo, đáp án tham khảo, cài đặt, hồ sơ bé, an toàn.
 class ParentHomeScreen extends ConsumerStatefulWidget {
@@ -410,6 +411,10 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
       padding: const EdgeInsets.all(20),
       children: [
         Text('🔊 Giọng Cú', style: titleStyle(26)),
+        const SizedBox(height: 8),
+        const VoicePicker(),
+        const SizedBox(height: 12),
+        Text('Tự chỉnh thêm', style: bodyStyle(20, AppColors.ink, FontWeight.w800)),
         _row(
           'Tốc độ đọc',
           Slider(
@@ -418,19 +423,19 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
             max: 0.75,
             divisions: 10,
             label: s.ttsRate.toStringAsFixed(2),
-            onChanged: (v) => _save(s.copyWith(ttsRate: v)),
+            onChanged: (v) => _save(s.copyWith(ttsRate: v, voicePreset: '')),
           ),
           note: 'Trẻ nhỏ nên đọc chậm',
         ),
         _row(
           'Cao độ giọng',
           Slider(
-            value: s.ttsPitch.clamp(0.8, 1.4).toDouble(),
-            min: 0.8,
-            max: 1.4,
-            divisions: 12,
+            value: s.ttsPitch.clamp(0.7, 1.8).toDouble(),
+            min: 0.7,
+            max: 1.8,
+            divisions: 22,
             label: s.ttsPitch.toStringAsFixed(2),
-            onChanged: (v) => _save(s.copyWith(ttsPitch: v)),
+            onChanged: (v) => _save(s.copyWith(ttsPitch: v, voicePreset: '')),
           ),
         ),
         Align(
