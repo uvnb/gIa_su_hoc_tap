@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/owl_view.dart';
 import '../../widgets/pin_pad.dart';
+import '../../widgets/web_help.dart';
 import 'profile_form.dart';
 
 /// Lần đầu mở app (FR-01, FR-02, FR-04):
@@ -91,6 +92,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 ),
                 const SizedBox(height: 28),
                 ElevatedButton(onPressed: _next, child: const Text('Bắt đầu  ➜')),
+                const SizedBox(height: 16),
+                const WebPermissionBanner(),
               ],
             ),
           ],

@@ -7,6 +7,7 @@ import '../../models/child_profile.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/owl_view.dart';
+import '../../widgets/web_help.dart';
 
 /// Môn đang chọn (đảo trên màn chính).
 final currentSubjectProvider = StateProvider<String>((ref) => 'math');
@@ -147,6 +148,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _topBar(ChildProfile child, List<ChildProfile> profiles) => Row(
         children: [
           Text('🦉 Chào ${child.nickname}!', style: titleStyle(34)),
+          const SizedBox(width: 16),
+          const WebPermissionBanner(),
           const Spacer(),
           StarBadge(stars: child.stars),
           const SizedBox(width: 16),

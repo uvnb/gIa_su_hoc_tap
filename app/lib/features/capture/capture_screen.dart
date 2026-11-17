@@ -6,6 +6,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/permissions.dart';
 import '../../core/providers.dart';
+import '../../core/web_env.dart';
+import '../../widgets/web_help.dart';
 import '../../theme/app_theme.dart';
 
 /// FR-10: chụp bài bằng camera sau, có khung "đặt vở vào khung". Tắt camera ngay sau khi chụp (tiết kiệm pin).
@@ -32,6 +34,13 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> with WidgetsBindi
   }
 
   Future<void> _init() async {
+    if (isInsecureWebContext) {
+      setState(() => _error = 'Camera chưa bật. Nhờ bố mẹ bấm nút vàng "Bật micro & camera" ở màn chính nhé!');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) showWebPermissionHelp(context);
+      });
+      return;
+    }
     if (!await ensurePermission(Permission.camera)) {
       setState(() => _error = 'Cú cần quyền dùng camera. Nhờ bố mẹ bật quyền Camera cho ứng dụng nhé!');
       return;

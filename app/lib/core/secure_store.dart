@@ -3,10 +3,48 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import 'web_env.dart';
+
+/// Kho bảo mật của máy; nếu trình duyệt chặn mã hóa (trang http:// chưa bật tùy chọn Chrome)
+/// thì lưu tạm vào bộ nhớ thường của app – PIN vẫn được băm + muối, không bao giờ lưu dạng rõ.
+class _Store {
+  final _secure = const FlutterSecureStorage();
+  Box get _box => Hive.box('meta');
+  String _k(String key) => 'sec:$key';
+
+  Future<String?> read({required String key}) async {
+    if (isInsecureWebContext) return _box.get(_k(key)) as String?;
+    try {
+      return await _secure.read(key: key) ?? _box.get(_k(key)) as String?;
+    } catch (_) {
+      return _box.get(_k(key)) as String?;
+    }
+  }
+
+  Future<void> write({required String key, required String value}) async {
+    if (!isInsecureWebContext) {
+      try {
+        await _secure.write(key: key, value: value);
+        return;
+      } catch (_) {}
+    }
+    await _box.put(_k(key), value);
+  }
+
+  Future<void> delete({required String key}) async {
+    await _box.delete(_k(key));
+    if (isInsecureWebContext) return;
+    try {
+      await _secure.delete(key: key);
+    } catch (_) {}
+  }
+}
 
 /// Lưu bí mật trên máy: mã PIN phụ huynh (băm + muối), device_id, parent_token (FR-04, FR-61).
 class SecureStore {
-  final _s = const FlutterSecureStorage();
+  final _s = _Store();
 
   static const _kPinHash = 'pin_hash';
   static const _kPinSalt = 'pin_salt';

@@ -6,6 +6,8 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../core/permissions.dart';
 import '../core/providers.dart';
+import '../core/web_env.dart';
+import 'web_help.dart';
 import '../theme/app_theme.dart';
 
 /// Nút micro "giữ để nói" (mục 14.6): tròn 96dp, sóng âm khi nghe, trả chữ nhận dạng khi thả tay.
@@ -40,6 +42,12 @@ class _MicButtonState extends ConsumerState<MicButton> {
 
   Future<void> _down() async {
     if (!widget.enabled) return;
+    if (isInsecureWebContext) {
+      // Trình duyệt chặn micro trên trang http:// → hướng dẫn bố mẹ bật một lần.
+      ref.read(ttsProvider).say('Micro chưa bật. Nhờ bố mẹ bật giúp nhé!');
+      if (mounted) showWebPermissionHelp(context);
+      return;
+    }
     if (!await ensurePermission(Permission.microphone)) {
       ref.read(ttsProvider).say('Cú cần quyền dùng micro. Nhờ bố mẹ bật giúp nhé!');
       return;
