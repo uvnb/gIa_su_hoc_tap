@@ -9,6 +9,7 @@ import '../../models/child_profile.dart';
 import '../../models/tutor_models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pin_pad.dart';
+import 'ai_settings_section.dart';
 import 'parent_games_tab.dart';
 import 'parent_gate_screen.dart';
 import 'parent_voices_tab.dart';
@@ -489,16 +490,8 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
           ]),
         ),
         const Divider(height: 32),
-        Text('🤖 Trí tuệ nhân tạo', style: titleStyle(26)),
-        _row(
-            'Nhà cung cấp AI',
-            _choices<String>(s.provider, {'': 'Theo máy chủ', 'anthropic': 'Claude', 'openai': 'ChatGPT'},
-                (v) => _save(s.copyWith(provider: v))),
-            note: 'Khóa API chỉ nằm trên máy chủ, không lưu trên máy tính bảng'),
-        _row(
-            'Mức',
-            _choices<String>(s.tier, {'tiet_kiem': 'Tiết kiệm', 'can_bang': 'Cân bằng', 'thong_minh': 'Thông minh'},
-                (v) => _save(s.copyWith(tier: v)))),
+        const AiSettingsSection(),
+        const SizedBox(height: 8),
         _row(
           'Địa chỉ máy chủ',
           Row(children: [

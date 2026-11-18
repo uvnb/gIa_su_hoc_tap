@@ -28,7 +28,10 @@ _CACHE_MIN_CHARS = 1500  # system prompt đủ dài mới đánh dấu cache (t�
 class AnthropicProvider(LLMProvider):
     name = "anthropic"
 
-    def __init__(self) -> None:
+    def __init__(self, api_key: str | None = None) -> None:
+        if api_key:  # khóa của phụ huynh nhập trong app
+            self.client = anthropic.Anthropic(api_key=api_key, timeout=30.0, max_retries=2)
+            return
         if not os.getenv("ANTHROPIC_API_KEY") and not os.getenv("ANTHROPIC_AUTH_TOKEN"):
             # SDK cũng đọc được hồ sơ `ant auth login`, nên chỉ cảnh báo nhẹ.
             pass

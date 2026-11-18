@@ -41,12 +41,47 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   }
 }
 
-final settingsProvider =
-    StateNotifierProvider<SettingsNotifier, AppSettings>((ref) => SettingsNotifier(ref));
+final settingsProvider = StateNotifierProvider<SettingsNotifier, AppSettings>((ref) => SettingsNotifier(ref));
+
+/// Khóa AI riêng của phụ huynh cho nhà cung cấp đang chọn (null = dùng AI mặc định của máy chủ).
+class AiCred {
+  final String provider, key, model;
+  const AiCred(this.provider, this.key, this.model);
+}
+
+class AiCredNotifier extends StateNotifier<AiCred?> {
+  AiCredNotifier(this._ref) : super(null) {
+    reload();
+  }
+  final Ref _ref;
+
+  Future<void> reload() async {
+    final provider = _ref.read(settingsProvider).provider;
+    if (provider.isEmpty) {
+      state = null;
+      return;
+    }
+    final sec = _ref.read(secureStoreProvider);
+    final key = await sec.aiKey(provider);
+    state = key == null || key.isEmpty ? null : AiCred(provider, key, await sec.aiModel(provider) ?? '');
+  }
+}
+
+final aiCredProvider = StateNotifierProvider<AiCredNotifier, AiCred?>((ref) {
+  ref.watch(settingsProvider.select((s) => s.provider)); // đổi nhà cung cấp → nạp lại khóa tương ứng
+  return AiCredNotifier(ref);
+});
 
 final apiProvider = Provider<ApiClient>((ref) {
   final url = ref.watch(settingsProvider.select((s) => s.serverUrl));
-  return ApiClient(url.trim().isNotEmpty ? url.trim() : AppConfig.apiBaseUrl, AppConfig.appSecret);
+  final cred = ref.watch(aiCredProvider);
+  return ApiClient(
+    url.trim().isNotEmpty ? url.trim() : AppConfig.apiBaseUrl,
+    AppConfig.appSecret,
+    aiHeaders: cred == null
+        ? const {}
+        : {'x-ai-provider': cred.provider, 'x-ai-key': cred.key, if (cred.model.isNotEmpty) 'x-ai-model': cred.model},
+  );
 });
 
 // ---------------------------------------------------------------- hồ sơ bé

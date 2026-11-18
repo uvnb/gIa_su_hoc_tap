@@ -87,8 +87,7 @@ class SecureStore {
     final fails = (int.tryParse(await _s.read(key: _kFails) ?? '0') ?? 0) + 1;
     if (fails >= 3) {
       await _s.write(
-          key: _kLockUntil,
-          value: DateTime.now().add(const Duration(minutes: 1)).millisecondsSinceEpoch.toString());
+          key: _kLockUntil, value: DateTime.now().add(const Duration(minutes: 1)).millisecondsSinceEpoch.toString());
       await _s.delete(key: _kFails);
     } else {
       await _s.write(key: _kFails, value: '$fails');
@@ -98,6 +97,19 @@ class SecureStore {
 
   Future<String?> deviceId() => _s.read(key: _kDeviceId);
   Future<String?> parentToken() => _s.read(key: _kParentToken);
+
+  // ---- khóa AI riêng của phụ huynh (mã hóa trên máy, chỉ gửi kèm khi hỏi Cú) ----
+  Future<String?> aiKey(String provider) => _s.read(key: 'ai_key_$provider');
+  Future<String?> aiModel(String provider) => _s.read(key: 'ai_model_$provider');
+  Future<void> setAiKey(String provider, String key, {String model = ''}) async {
+    await _s.write(key: 'ai_key_$provider', value: key);
+    await _s.write(key: 'ai_model_$provider', value: model);
+  }
+
+  Future<void> deleteAiKey(String provider) async {
+    await _s.delete(key: 'ai_key_$provider');
+    await _s.delete(key: 'ai_model_$provider');
+  }
 
   Future<void> saveDevice(String deviceId, String parentToken) async {
     await _s.write(key: _kDeviceId, value: deviceId);

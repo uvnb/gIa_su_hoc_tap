@@ -46,10 +46,10 @@ def model_for(name: str, role: str = "TUTOR") -> str:
 
 
 class CompatProvider(LLMProvider):
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, api_key: str | None = None) -> None:
         from openai import OpenAI
         p = PRESETS[name]
-        key = os.getenv(p.key_env, "").strip()
+        key = (api_key or os.getenv(p.key_env, "")).strip()
         if not key:
             raise ProviderError(f"Thiếu {p.key_env} trong .env")
         self.name = name

@@ -17,16 +17,16 @@ from .base import LLMProvider, ProviderError, ProviderRefusal
 class OpenAIProvider(LLMProvider):
     name = "openai"
 
-    def __init__(self) -> None:
+    def __init__(self, api_key: str | None = None) -> None:
         try:
             import openai  # noqa: F401 – nhập muộn để app vẫn chạy khi không dùng OpenAI
             from openai import OpenAI
         except ImportError as e:  # pragma: no cover
             raise ProviderError("Chưa cài thư viện openai (pip install openai)") from e
-        if not os.getenv("OPENAI_API_KEY"):
+        if not api_key and not os.getenv("OPENAI_API_KEY"):
             raise ProviderError("Thiếu OPENAI_API_KEY trong .env")
         self._openai = openai
-        self.client = OpenAI(timeout=30.0, max_retries=2)
+        self.client = OpenAI(api_key=api_key, timeout=30.0, max_retries=2) if api_key else OpenAI(timeout=30.0, max_retries=2)
 
     def complete(
         self,

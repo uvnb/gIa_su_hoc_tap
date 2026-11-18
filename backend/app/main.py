@@ -17,7 +17,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
 
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -27,7 +27,7 @@ from .config import TIERS, settings
 from .models import (DeviceRegistration, MysteryBox, Owl, ParentAnswer, ParentReport, ProblemBrief, ReportItem,
                      SelectRequest, SessionRef, StartResponse, TurnRequest, TurnResponse)
 from .pipeline import safety, solver, tutor
-from .providers import router
+from .providers import request_keys, router
 from .providers.base import ProviderError, ProviderRefusal
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -74,6 +74,17 @@ app = FastAPI(title="Cu To Mo Brain", version="1.0.0", lifespan=lifespan,
 if settings.cors_origin_regex and settings.cors_origin_regex.lower() != "off":
     app.add_middleware(CORSMiddleware, allow_origin_regex=settings.cors_origin_regex,
                        allow_methods=["GET", "POST", "DELETE", "OPTIONS"], allow_headers=["*"])
+
+
+@app.middleware("http")
+async def _parent_ai_key(request: Request, call_next):
+    """Khóa AI riêng của phụ huynh (header x-ai-*) chỉ sống trong yêu cầu này – không lưu, không ghi log."""
+    h = request.headers
+    token = request_keys.set_from_headers(h.get("x-ai-provider"), h.get("x-ai-key"), h.get("x-ai-model"))
+    try:
+        return await call_next(request)
+    finally:
+        request_keys.reset(token)
 
 
 # ------------------------------ xác thực ------------------------------
@@ -150,6 +161,70 @@ def health():
     return {"ok": True, "store": settings.store_backend,
             "providers": router.available(), "default_provider": settings.provider_for("TUTOR"),
             "configured_providers": [p for p in router.available() if router.configured(p)], "tiers": list(TIERS)}
+
+
+def _ai_error_info(e: BaseException) -> tuple[int, str]:
+    """Mã lỗi HTTP + nội dung lỗi gốc (đi theo chuỗi __cause__) – để báo đúng tình huống."""
+    status, parts, cur, seen = 0, [], e, 0
+    while cur is not None and seen < 5:
+        status = status or int(getattr(cur, "status_code", 0) or 0)
+        parts += [type(cur).__name__, str(cur), str(getattr(cur, "body", "") or ""), str(getattr(cur, "message", "") or "")]
+        cur, seen = cur.__cause__ or cur.__context__, seen + 1
+    return status, " ".join(parts).lower()
+
+
+def _friendly_ai_error(e: Exception, provider: str = "") -> str:
+    """Lỗi khi thử khóa AI → câu dễ hiểu cho bố mẹ (không bao giờ chứa khóa)."""
+    status, text = _ai_error_info(e)
+    if any(k in text for k in ("insufficient_quota", "credit balance", "billing", "exceeded your current quota"))             or status == 402:
+        return "Tài khoản AI chưa nạp tiền hoặc đã hết tiền. Vào trang của nhà cung cấp để nạp tiền nhé."
+    if status in (401, 403) or any(k in text for k in ("invalid_api_key", "incorrect api key", "api key not valid",
+                                                       "api_key_invalid", "authentication", "invalid x-api-key"))             or (status == 400 and provider == "gemini"):
+        return "Khóa không đúng hoặc đã bị thu hồi. Kiểm tra lại (copy đủ cả chuỗi) nhé."
+    if status == 429 or "rate" in text or "resource_exhausted" in text:
+        return "Khóa đang bị giới hạn lượt dùng (gọi quá nhiều). Thử lại sau ít phút."
+    if status == 404 or ("model" in text and "not" in text):
+        return "Khóa chưa được dùng model này. Thử tạo khóa mới hoặc nâng cấp tài khoản."
+    if status >= 500 or "overloaded" in text:
+        return "Nhà cung cấp AI đang quá tải. Thử lại sau ít phút."
+    if "timeout" in text or "connect" in text:
+        return "Không kết nối được tới nhà cung cấp AI. Thử lại sau."
+    return f"Khóa chưa dùng được ({type(e).__name__})."
+
+
+@app.post("/v1/ai/check", dependencies=[Depends(require_app)])
+def ai_check():
+    """Bố mẹ bấm "Kiểm tra khóa": thử 1 câu rất ngắn với khóa gửi kèm (x-ai-provider, x-ai-key).
+    Với ChatGPT: chọn model rẻ, đọc được ảnh mà khóa dùng được – app nhớ model này (x-ai-model)."""
+    own = request_keys.current()
+    if not own:
+        raise HTTPException(400, "Thiếu khóa hoặc nhà cung cấp chưa hỗ trợ")
+    try:
+        provider = router.instance(own.provider)
+        model = own.model
+        if own.provider == "openai" and not model:
+            model = router.DEFAULT_OPENAI_MODEL
+            try:
+                ids = {m.id for m in provider.client.models.list()}
+                model = next((m for m in router.OPENAI_PREFERENCE if m in ids), model)
+            except Exception:  # khóa giới hạn quyền liệt kê model – dùng mặc định
+                pass
+        if not model:
+            model = settings.model_for("TUTOR", own.provider, None)
+        for attempt in range(3):  # gói miễn phí hay quá tải tạm thời (503) → thử lại
+            try:
+                reply = provider.complete("Trả lời đúng một từ: OK", "Kiểm tra kết nối", model=model, role="TUTOR",
+                                          max_tokens=64)
+                break
+            except Exception as e:
+                status, _ = _ai_error_info(e)
+                if attempt == 2 or not (status >= 500 or status == 0 and "không có câu trả lời" in str(e)):
+                    raise
+                time.sleep(1.5)
+        return {"ok": True, "provider": own.provider, "model": model, "reply": (reply or "")[:20]}
+    except Exception as e:  # không ghi log nội dung lỗi có thể chứa khóa
+        log.info("ai_check thất bại: provider=%s mã=%s", own.provider, _ai_error_info(e)[0])
+        return {"ok": False, "provider": own.provider, "error": _friendly_ai_error(e, own.provider)}
 
 
 @app.post("/v1/device/register", response_model=DeviceRegistration, dependencies=[Depends(require_app)])

@@ -24,10 +24,7 @@ class LocalStore {
   }
 
   // ---------------- hồ sơ bé ----------------
-  List<ChildProfile> profiles() => _profiles.values
-      .whereType<Map>()
-      .map((m) => ChildProfile.fromMap(m))
-      .toList();
+  List<ChildProfile> profiles() => _profiles.values.whereType<Map>().map((m) => ChildProfile.fromMap(m)).toList();
 
   Future<void> saveProfile(ChildProfile p) => _profiles.put(p.id, p.toMap());
   Future<void> deleteProfile(String id) => _profiles.delete(id);
@@ -54,8 +51,7 @@ class LocalStore {
   }
 
   /// Phút phụ huynh cho thêm hôm nay (mở khóa khi hết giờ).
-  int extraMinutesToday(String childId) =>
-      (_usage.get('extra|$childId|${dayKey(DateTime.now())}') as int?) ?? 0;
+  int extraMinutesToday(String childId) => (_usage.get('extra|$childId|${dayKey(DateTime.now())}') as int?) ?? 0;
 
   Future<void> addExtraMinutes(String childId, int m) {
     final k = 'extra|$childId|${dayKey(DateTime.now())}';
@@ -150,10 +146,7 @@ class LocalStore {
   Future<void> deleteWish(String id) => _wishes.delete(id);
 
   // ---------------- lời ghi âm của bố mẹ ----------------
-  List<ParentVoice> voices() => _voices.values
-      .whereType<Map>()
-      .map((m) => ParentVoice.fromMap(m))
-      .toList()
+  List<ParentVoice> voices() => _voices.values.whereType<Map>().map((m) => ParentVoice.fromMap(m)).toList()
     ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
   Future<void> saveVoice(ParentVoice v) => _voices.put(v.id, v.toMap());

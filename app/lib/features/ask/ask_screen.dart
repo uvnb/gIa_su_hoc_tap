@@ -58,7 +58,7 @@ class _AskScreenState extends ConsumerState<AskScreen> {
                   const SizedBox(width: 20),
                   Text('Hỏi Cú', style: titleStyle(34)),
                   const Spacer(),
-                  for (final s in const ['math', 'vietnamese', 'science'])
+                  for (final s in const ['math', 'vietnamese', 'english', 'science'])
                     Padding(
                       padding: const EdgeInsets.only(left: 10),
                       child: ChoiceChip(

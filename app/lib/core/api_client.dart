@@ -27,7 +27,9 @@ class ApiError implements Exception {
 
 /// Gọi backend "Cú Brain". App KHÔNG có khóa AI và KHÔNG bao giờ nhận đáp án.
 class ApiClient {
-  ApiClient(String baseUrl, String appSecret)
+  /// [aiHeaders]: khóa AI riêng của phụ huynh (x-ai-provider, x-ai-key, x-ai-model) – gửi kèm qua HTTPS,
+  /// máy chủ chỉ dùng trong yêu cầu đó, không lưu.
+  ApiClient(String baseUrl, String appSecret, {Map<String, String> aiHeaders = const {}})
       : _primary = baseUrl,
         _dio = Dio(BaseOptions(
           baseUrl: baseUrl,
@@ -35,7 +37,7 @@ class ApiClient {
           connectTimeout: const Duration(seconds: 4),
           sendTimeout: const Duration(seconds: 20),
           receiveTimeout: const Duration(seconds: 45),
-          headers: {'x-app-secret': appSecret},
+          headers: {'x-app-secret': appSecret, ...aiHeaders},
         ));
 
   final Dio _dio;
@@ -104,6 +106,24 @@ class ApiClient {
     return (m['device_id'] as String, m['parent_token'] as String);
   }
 
+  /// Bố mẹ bấm "Lưu & kiểm tra": thử khóa AI (không dùng khóa đang lưu, dùng khóa vừa nhập).
+  /// Trả (ok, model, lỗi dễ hiểu).
+  Future<(bool, String, String)> checkAiKey(String provider, String key) async {
+    try {
+      final r = await _send(() => _dio.post('/v1/ai/check',
+          options: Options(
+            headers: {'x-ai-provider': provider, 'x-ai-key': key, 'x-ai-model': ''},
+            receiveTimeout: const Duration(seconds: 60),
+          )));
+      final m = r.data as Map;
+      return (m['ok'] == true, '${m['model'] ?? ''}', '${m['error'] ?? ''}');
+    } on ApiOffline {
+      return (false, '', 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.');
+    } catch (e) {
+      return (false, '', 'Máy chủ chưa kiểm tra được khóa ($e).');
+    }
+  }
+
   Future<bool> health() async {
     try {
       final r = await _dio.get('/v1/health');
@@ -143,8 +163,8 @@ class ApiClient {
   }
 
   Future<StartResult> selectProblem(String sessionId, int problemId) async {
-    final r = await _send(() =>
-        _dio.post('/v1/session/select', data: {'session_id': sessionId, 'problem_id': problemId}));
+    final r =
+        await _send(() => _dio.post('/v1/session/select', data: {'session_id': sessionId, 'problem_id': problemId}));
     return StartResult.fromJson(_map(r));
   }
 
@@ -154,8 +174,8 @@ class ApiClient {
   }
 
   Future<TurnResult> turn(String sessionId, String input, String mode) async {
-    final r = await _send(() => _dio.post('/v1/session/turn',
-        data: {'session_id': sessionId, 'child_input': input, 'input_mode': mode}));
+    final r = await _send(
+        () => _dio.post('/v1/session/turn', data: {'session_id': sessionId, 'child_input': input, 'input_mode': mode}));
     return TurnResult.fromJson(_map(r));
   }
 
@@ -181,17 +201,15 @@ class ApiClient {
   // ------------------------------------------------------------------ Góc phụ huynh
   Options _parent(String token) => Options(headers: {'x-parent-token': token});
 
-  Future<ParentReport> parentReport(String deviceId, String childId, String token,
-      {String period = 'day'}) async {
+  Future<ParentReport> parentReport(String deviceId, String childId, String token, {String period = 'day'}) async {
     final r = await _send(() => _dio.get('/v1/parent/report',
-        queryParameters: {'device_id': deviceId, 'child_id': childId, 'period': period},
-        options: _parent(token)));
+        queryParameters: {'device_id': deviceId, 'child_id': childId, 'period': period}, options: _parent(token)));
     return ParentReport.fromJson(_map(r));
   }
 
   Future<Map<String, dynamic>> parentAnswer(String sessionId, String token) async {
-    final r = await _send(() => _dio.get('/v1/parent/answer',
-        queryParameters: {'session_id': sessionId}, options: _parent(token)));
+    final r = await _send(
+        () => _dio.get('/v1/parent/answer', queryParameters: {'session_id': sessionId}, options: _parent(token)));
     return _map(r);
   }
 
