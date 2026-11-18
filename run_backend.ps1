@@ -33,8 +33,13 @@ if (-not $Mock) {
 $aiName = @{ mock = 'GIẢ LẬP – miễn phí'; deepseek = 'DeepSeek'; gemini = 'Google Gemini';
              openrouter = 'OpenRouter'; anthropic = 'Claude' }[$ai]
 
-# APP_SHARED_SECRET phải trùng app_secret khi build APK (mặc định cutomo-local).
-$setup = "`$env:APP_SHARED_SECRET='cutomo-local'; `$env:PYTHONIOENCODING='utf-8'; `$env:DEFAULT_PROVIDER='$ai';" +
+# APP_SHARED_SECRET phải trùng app_secret khi build APK. Máy nhà là bản DỰ PHÒNG cho cloud: nhận cả
+# mã bí mật mới (APP_SHARED_SECRET trong backend\.env – giống bản cloud) lẫn mã cũ cutomo-local.
+$secret = 'cutomo-local'
+if ($keys.ContainsKey('APP_SHARED_SECRET') -and $keys['APP_SHARED_SECRET'] -ne 'cutomo-local') {
+    $secret = "$($keys['APP_SHARED_SECRET']),cutomo-local"
+}
+$setup = "`$env:APP_SHARED_SECRET='$secret'; `$env:PYTHONIOENCODING='utf-8'; `$env:DEFAULT_PROVIDER='$ai';" +
          " `$env:SOLVER_PROVIDER='$ai'; `$env:TUTOR_PROVIDER='$ai'; `$env:CHECKER_PROVIDER='$ai'; `$env:GUARD_PROVIDER='$ai';"
 $title = "Cu Brain - $ai - cong $Port"
 $cmd = "$setup `$Host.UI.RawUI.WindowTitle='$title'; Set-Location '$root\backend'; " +

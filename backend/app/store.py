@@ -1,4 +1,4 @@
-"""Lưu trữ SQLite: phiên học (có đáp án BÍ MẬT), nhật ký bài cho báo cáo phụ huynh, thiết bị, cache Solver.
+"""Lưu trữ SQLite (máy tính ở nhà): phiên học (có đáp án BÍ MẬT), nhật ký bài cho báo cáo phụ huynh, thiết bị, cache Solver.
 
 - Ảnh bài tập KHÔNG được lưu (chỉ xử lý trong bộ nhớ) → đáp ứng NFR-08 ở mức chặt nhất.
 - Cache Solver lưu văn bản đề + lời giải theo hash ảnh, tự xóa sau IMAGE_RETENTION_HOURS.
@@ -202,3 +202,12 @@ def cleanup() -> dict[str, int]:
         b = c.execute("DELETE FROM sessions WHERE updated_at<?", (sess_cut,)).rowcount
         d = c.execute("DELETE FROM problem_log WHERE updated_at<?", (sess_cut,)).rowcount
     return {"solver_cache": a, "sessions": b, "problem_log": d}
+
+
+# ------------------------------ chạy trên cloud ------------------------------
+# STORE_BACKEND=firestore (Cloud Run): dùng cùng các hàm nhưng lưu ở Firestore.
+if settings.store_backend == "firestore":  # pragma: no cover – kiểm thử bằng bản SQLite
+    from .store_firestore import (  # noqa: F401,F811
+        check_parent_token, cleanup, count_sessions_today, delete_child, device_exists, import_device,
+        import_problem_log, load, new_session_id, problem_logs, register_device, reset_for_tests, save,
+        solver_cache_get, solver_cache_put)

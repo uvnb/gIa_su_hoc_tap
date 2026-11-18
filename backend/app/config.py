@@ -38,7 +38,11 @@ def _int(name: str, default: int) -> int:
 
 @dataclass
 class Settings:
+    # Có thể ghi nhiều chuỗi cách nhau bởi dấu phẩy (vd khi đổi secret: chấp nhận cả cũ lẫn mới một thời gian).
     app_shared_secret: str = field(default_factory=lambda: _env("APP_SHARED_SECRET", "change-me"))
+    # Nơi lưu dữ liệu: sqlite (máy tính ở nhà – mặc định) | firestore (Google Cloud Run)
+    store_backend: str = field(default_factory=lambda: _env("STORE_BACKEND", "sqlite").lower())
+    firestore_database: str = field(default_factory=lambda: _env("FIRESTORE_DATABASE", "(default)"))
     db_path: str = field(default_factory=lambda: _env("DB_PATH", str(Path(__file__).resolve().parent.parent / "data" / "cutomo.sqlite3")))
     image_retention_hours: int = field(default_factory=lambda: _int("IMAGE_RETENTION_HOURS", 24))
     session_retention_days: int = field(default_factory=lambda: _int("SESSION_RETENTION_DAYS", 30))

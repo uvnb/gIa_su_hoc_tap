@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
+import hmac
 import io
 import json
 import logging
@@ -65,7 +66,11 @@ async def lifespan(_: FastAPI):
     stop.set()
 
 
-app = FastAPI(title="Cu To Mo Brain", version="1.0.0", lifespan=lifespan)
+# Trên cloud (Firestore) tắt trang tài liệu /docs công khai.
+_cloud = settings.store_backend == "firestore"
+app = FastAPI(title="Cu To Mo Brain", version="1.0.0", lifespan=lifespan,
+              docs_url=None if _cloud else "/docs", redoc_url=None if _cloud else "/redoc",
+              openapi_url=None if _cloud else "/openapi.json")
 if settings.cors_origin_regex and settings.cors_origin_regex.lower() != "off":
     app.add_middleware(CORSMiddleware, allow_origin_regex=settings.cors_origin_regex,
                        allow_methods=["GET", "POST", "DELETE", "OPTIONS"], allow_headers=["*"])
@@ -74,7 +79,8 @@ if settings.cors_origin_regex and settings.cors_origin_regex.lower() != "off":
 # ------------------------------ xác thực ------------------------------
 
 def require_app(x_app_secret: Optional[str] = Header(None)) -> None:
-    if x_app_secret != settings.app_shared_secret:
+    allowed = [x.strip() for x in settings.app_shared_secret.split(",") if x.strip()]
+    if not x_app_secret or not any(hmac.compare_digest(x_app_secret, a) for a in allowed):
         raise HTTPException(401, "Sai app secret")
 
 
@@ -141,7 +147,8 @@ def _activate(sess: dict, problem: dict) -> str:
 
 @app.get("/v1/health")
 def health():
-    return {"ok": True, "providers": router.available(), "default_provider": settings.provider_for("TUTOR"),
+    return {"ok": True, "store": settings.store_backend,
+            "providers": router.available(), "default_provider": settings.provider_for("TUTOR"),
             "configured_providers": [p for p in router.available() if router.configured(p)], "tiers": list(TIERS)}
 
 

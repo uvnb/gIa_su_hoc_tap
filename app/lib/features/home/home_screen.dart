@@ -31,6 +31,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(studyTimerProvider.notifier).refresh();
+      // Máy chủ Cloud Run tự tắt khi không ai dùng → gọi trước để "đánh thức", lúc bé chụp bài khỏi chờ lâu.
+      ref.read(apiProvider).health().catchError((_) => false);
       ref.read(deviceServiceProvider).ensureRegistered();
       final child = ref.read(activeChildProvider);
       if (!_greetedThisLaunch && child != null) {

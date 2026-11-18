@@ -9,13 +9,13 @@ on:
   workflow_dispatch:
     inputs:
       api_base_url:
-        description: "Địa chỉ backend mà máy tính bảng gọi tới (IP máy tính chạy backend trong mạng nhà)"
-        required: true
-        default: "http://192.168.0.100:8090"
+        description: "Địa chỉ backend (để trống = dùng biến API_BASE_URL của kho – máy chủ Cloud Run)"
+        required: false
+        default: ""
       app_secret:
-        description: "Phải trùng APP_SHARED_SECRET của backend"
-        required: true
-        default: "cutomo-local"
+        description: "Để trống = dùng secret APP_SECRET của kho (phải trùng APP_SHARED_SECRET của backend)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -47,8 +47,10 @@ jobs:
     permissions:
       contents: write   # để cập nhật trang tải (Releases)
     env:
-      API_BASE_URL: ${{ github.event.inputs.api_base_url || 'http://192.168.0.100:8090' }}
-      APP_SECRET: ${{ github.event.inputs.app_secret || 'cutomo-local' }}
+      # Địa chỉ máy chủ Cloud Run (biến kho API_BASE_URL) và mã bí mật (secret kho APP_SECRET).
+      # Không có thì dùng máy chủ ở nhà. App luôn tự thử máy nhà qua cáp USB khi cloud không trả lời.
+      API_BASE_URL: ${{ github.event.inputs.api_base_url || vars.API_BASE_URL || 'http://192.168.0.100:8090' }}
+      APP_SECRET: ${{ github.event.inputs.app_secret || secrets.APP_SECRET || 'cutomo-local' }}
     defaults:
       run:
         working-directory: app

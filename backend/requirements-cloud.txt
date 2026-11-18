@@ -1,0 +1,3 @@
+# Gói thêm cho bản chạy trên Google Cloud Run (Dockerfile dùng file này).
+-r requirements.txt
+google-cloud-firestore==2.34.1

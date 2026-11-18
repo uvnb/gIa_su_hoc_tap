@@ -1,0 +1,14 @@
+# Không gửi lên Cloud Build: khóa API, môi trường ảo, dữ liệu máy nhà, kiểm thử
+.env
+.env.*
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/
+tests/
+scripts/
+*.sqlite3*
+requirements-ocr.txt
+requirements-dev.txt
