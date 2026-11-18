@@ -88,6 +88,15 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
     }
     final canPlay = time.canPlay;
     final compact = isCompact(context);
+    Widget card(String id) {
+      final g = gameInfos.firstWhere((e) => e.id == id);
+      return _GameCard(
+        info: g,
+        stats: 'Cấp ${store.gameLevel(child.id, id)} · Kỷ lục ${store.gameBest(child.id, id)}',
+        onPlay: canPlay ? () => context.go('/games/$id') : null,
+      );
+    }
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -123,35 +132,25 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
                 ]),
                 const SizedBox(height: 12),
                 if (!canPlay) _blocked(time),
+                // 4 trò chơi – lưới 2 × 2
                 Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: _GameCard(
-                          emoji: '🧩',
-                          title: 'Xếp Khối Toán',
-                          desc: 'Kéo khối, nổ hàng, giải đố toán để mở khối bí ẩn!',
-                          colors: const [Color(0xFFFF8FB1), Color(0xFFFFB547)],
-                          stats:
-                              'Cấp ${store.gameLevel(child.id, 'blocks')} · Kỷ lục ${store.gameBest(child.id, 'blocks')}',
-                          onPlay: canPlay ? () => context.go('/games/blocks') : null,
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: _GameCard(
-                          emoji: '🦉',
-                          title: 'Cú Từ Ngữ',
-                          desc: 'Đọc to từ trên màn hình để Cú nhảy qua chướng ngại vật!',
-                          colors: const [Color(0xFF5EB8FF), Color(0xFF6BD49A)],
-                          stats:
-                              'Cấp ${store.gameLevel(child.id, 'runner')} · Kỷ lục ${store.gameBest(child.id, 'runner')}',
-                          onPlay: canPlay ? () => context.go('/games/runner') : null,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: Column(children: [
+                    Expanded(
+                      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        Expanded(child: card('blocks')),
+                        SizedBox(width: compact ? 12 : 18),
+                        Expanded(child: card('runner')),
+                      ]),
+                    ),
+                    SizedBox(height: compact ? 10 : 14),
+                    Expanded(
+                      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                        Expanded(child: card('balloon')),
+                        SizedBox(width: compact ? 12 : 18),
+                        Expanded(child: card('memory')),
+                      ]),
+                    ),
+                  ]),
                 ),
                 SizedBox(height: compact ? 10 : 14),
                 _wishCard(child.id, pts, settings.gameDailyGoal, store, compact),
@@ -269,69 +268,86 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
   }
 }
 
-class _GameCard extends StatelessWidget {
-  const _GameCard({
-    required this.emoji,
-    required this.title,
-    required this.desc,
-    required this.colors,
-    required this.stats,
-    required this.onPlay,
-  });
-  final String emoji, title, desc, stats;
+/// Thông tin 4 trò chơi (dùng ở Góc trò chơi và Góc phụ huynh).
+class GameInfo {
+  final String id, emoji, title, desc;
   final List<Color> colors;
+  const GameInfo(this.id, this.emoji, this.title, this.desc, this.colors);
+}
+
+const gameInfos = [
+  GameInfo('blocks', '🧩', 'Xếp Khối Toán', 'Xếp khối, nổ hàng, giải đố toán mở khối bí ẩn!',
+      [Color(0xFFFF8FB1), Color(0xFFFFB547)]),
+  GameInfo('runner', '🦉', 'Cú Từ Ngữ', 'Đọc to từ trên màn hình để Cú nhảy qua chướng ngại!',
+      [Color(0xFF5EB8FF), Color(0xFF6BD49A)]),
+  GameInfo('balloon', '🎈', 'Bóng Bay Phép Tính', 'Chạm thật nhanh những quả bóng đúng mục tiêu!',
+      [Color(0xFFFFB547), Color(0xFFFF7A6B)]),
+  GameInfo('memory', '🃏', 'Lật Thẻ Trí Nhớ', 'Lật thẻ tìm cặp: hình – chữ, phép tính – kết quả!',
+      [Color(0xFFB08CFF), Color(0xFF4FD1C5)]),
+];
+
+/// Thẻ trò chơi nằm ngang: hình to bên trái, tên + mô tả + cấp ở giữa, nút ▶️ bên phải.
+class _GameCard extends StatelessWidget {
+  const _GameCard({required this.info, required this.stats, required this.onPlay});
+  final GameInfo info;
+  final String stats;
   final VoidCallback? onPlay;
 
   @override
   Widget build(BuildContext context) {
     final enabled = onPlay != null;
+    final colors = enabled ? info.colors : [Colors.grey.shade300, Colors.grey.shade400];
     return Material(
-      borderRadius: BorderRadius.circular(36),
-      elevation: enabled ? 6 : 0,
+      borderRadius: BorderRadius.circular(30),
+      elevation: enabled ? 5 : 0,
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(36),
+        borderRadius: BorderRadius.circular(30),
         onTap: onPlay,
         child: Ink(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(36),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: enabled ? colors : [Colors.grey.shade300, Colors.grey.shade400],
-            ),
+            borderRadius: BorderRadius.circular(30),
+            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(22),
+            padding: const EdgeInsets.all(12),
             child: FittedBox(
-              fit: BoxFit.scaleDown,
+              fit: BoxFit.contain,
               child: SizedBox(
-                width: 480,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(emoji, style: const TextStyle(fontSize: 110)),
-                    Text(title, style: titleStyle(44, Colors.white)),
-                    const SizedBox(height: 6),
-                    Text(desc, textAlign: TextAlign.center, style: bodyStyle(22, Colors.white, FontWeight.w700)),
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(stats, style: bodyStyle(20, Colors.white, FontWeight.w800)),
+                width: 540,
+                height: 200,
+                child: Row(children: [
+                  Text(info.emoji, style: const TextStyle(fontSize: 96)),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(info.title, maxLines: 1, style: titleStyle(40, Colors.white)),
+                        const SizedBox(height: 4),
+                        Text(info.desc, maxLines: 2, style: bodyStyle(21, Colors.white, FontWeight.w700)),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(stats, style: bodyStyle(19, Colors.white, FontWeight.w800)),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(30)),
-                      child: Text(enabled ? '▶️ Chơi' : '🔒 Chưa mở',
-                          style: titleStyle(30, enabled ? colors.first : Colors.grey)),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    width: 92,
+                    height: 92,
+                    alignment: Alignment.center,
+                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                    child: Text(enabled ? '▶️' : '🔒', style: const TextStyle(fontSize: 44)),
+                  ),
+                ]),
               ),
             ),
           ),

@@ -1,6 +1,8 @@
 """Sinh nhạc nền vòng lặp cho Góc trò chơi – giai điệu tự sáng tác, tự tổng hợp → không lo bản quyền.
   blocks.wav : "Vui xếp khối"  – 120 nhịp/phút, Đô trưởng, tung tăng
   runner.wav : "Cú chạy băng băng" – 140 nhịp/phút, La thứ, sôi động
+  balloon.wav: "Bóng bay tung tăng" – 132 nhịp/phút, Son trưởng, nảy tưng tưng
+  memory.wav : "Hộp nhạc trí nhớ" – 96 nhịp/phút, Fa trưởng, nhẹ nhàng để bé tập trung
 Chạy: python tool/gen_music.py  (ghi vào assets/music/). Vòng lặp liền mạch (đuôi nốt quấn về đầu bài).
 """
 import math
@@ -123,7 +125,8 @@ def hat(vol=0.05, length=0.035):
 
 CHORDS = {
     "C": ["C", "E", "G"], "G": ["G", "B", "D"], "Am": ["A", "C", "E"], "F": ["F", "A", "C"],
-    "Dm": ["D", "F", "A"], "E": ["E", "G#", "B"],
+    "Dm": ["D", "F", "A"], "E": ["E", "G#", "B"], "D": ["D", "F#", "A"], "Em": ["E", "G", "B"],
+    "Bb": ["Bb", "D", "F"],
 }
 
 
@@ -202,6 +205,87 @@ def runner():
     song.write("runner")
 
 
+def bell(f, dur, vol=0.22):
+    """Tiếng hộp nhạc: sin trong + hài bậc cao tắt nhanh, ngân dài."""
+    n = int(dur * SR)
+    out = []
+    for i in range(n):
+        t = i / SR
+        ph = 2 * math.pi * f * t
+        s_ = math.sin(ph) * math.exp(-2.2 * t) + 0.3 * math.sin(2 * ph) * math.exp(-5 * t)             + 0.12 * math.sin(4.2 * ph) * math.exp(-9 * t)
+        out.append(vol * min(1.0, i / 40) * s_ * min(1.0, (n - i) / (0.03 * SR)))
+    return out
+
+
+def balloon():
+    song = Song(bpm=132, bars=8)
+    e = song.eighth
+    prog = ["G", "D", "Em", "C", "G", "D", "C", "D"]
+    melody = [
+        ("G5", 1), ("R", 1), ("B5", 1), ("D6", 1), ("B5", 1), ("G5", 1), ("A5", 2),
+        ("F#5", 1), ("R", 1), ("A5", 1), ("D6", 1), ("C6", 1), ("A5", 1), ("F#5", 2),
+        ("E5", 1), ("G5", 1), ("B5", 1), ("E6", 1), ("D6", 1), ("B5", 1), ("G5", 2),
+        ("C6", 1), ("B5", 1), ("A5", 1), ("G5", 1), ("E5", 2), ("G5", 2),
+        ("D6", 1), ("B5", 1), ("D6", 1), ("G6", 1), ("F#6", 1), ("D6", 1), ("B5", 2),
+        ("A5", 1), ("F#5", 1), ("A5", 1), ("D6", 1), ("C6", 2), ("A5", 2),
+        ("G5", 1), ("A5", 1), ("B5", 1), ("C6", 1), ("E6", 2), ("D6", 2),
+        ("D6", 1), ("C6", 1), ("B5", 1), ("A5", 1), ("F#5", 2), ("D5", 2),
+    ]
+    t = 0.0
+    for note, eighths in melody:  # nốt ngắn, nảy (staccato)
+        d = eighths * e
+        if note != "R":
+            song.add(t, lead(freq(note), min(d * 0.7, e * 1.1), vol=0.28))
+        t += d
+    for b, ch in enumerate(prog):
+        bar = b * 8 * e
+        r, third, fifth = CHORDS[ch]
+        # bass "um-pa": gốc ở phách mạnh, hợp âm ở phách nhẹ
+        for k in range(4):
+            song.add(bar + k * 2 * e, bass(freq((r if k % 2 == 0 else fifth) + "2"), e * 0.9))
+            for nm in (r + "4", third + "4", fifth + "4"):
+                song.add(bar + (k * 2 + 1) * e, pluck(freq(nm), e * 0.8, vol=0.06))
+        for beat in range(4):
+            song.add(bar + beat * 2 * e, kick(0.45) if beat % 2 == 0 else snare(0.16))
+        for k in range(8):
+            song.add(bar + k * e, hat(0.05 if k % 2 else 0.03))
+    song.write("balloon")
+
+
+def memory():
+    song = Song(bpm=96, bars=8)
+    e = song.eighth
+    prog = ["F", "C", "Dm", "Bb", "F", "C", "Bb", "C"]
+    melody = [
+        ("A5", 2), ("C6", 2), ("F6", 2), ("C6", 2),
+        ("G5", 2), ("C6", 2), ("E6", 2), ("C6", 2),
+        ("F5", 2), ("A5", 2), ("D6", 2), ("A5", 2),
+        ("F5", 2), ("Bb5", 2), ("D6", 2), ("C6", 2),
+        ("A5", 1), ("Bb5", 1), ("C6", 2), ("A5", 2), ("F5", 2),
+        ("G5", 1), ("A5", 1), ("Bb5", 2), ("G5", 2), ("E5", 2),
+        ("D5", 2), ("F5", 2), ("Bb5", 2), ("A5", 2),
+        ("G5", 2), ("E5", 2), ("C5", 4),
+    ]
+    t = 0.0
+    for note, eighths in melody:
+        d = eighths * e
+        if note != "R":
+            song.add(t, bell(freq(note), d * 1.6))
+        t += d
+    for b, ch in enumerate(prog):
+        bar = b * 8 * e
+        r, third, fifth = CHORDS[ch]
+        song.add(bar, bass(freq(r + "2"), 4 * e, vol=0.16))
+        song.add(bar + 4 * e, bass(freq(fifth + "2"), 4 * e, vol=0.14))
+        for k, nm in enumerate([r + "4", fifth + "4", third + "5", fifth + "4"] * 2):
+            song.add(bar + k * e, pluck(freq(nm), e * 1.8, vol=0.05))
+        for k in range(4):
+            song.add(bar + (2 * k + 1) * e, hat(0.02, 0.02))
+    song.write("memory")
+
+
 if __name__ == "__main__":
     blocks()
     runner()
+    balloon()
+    memory()

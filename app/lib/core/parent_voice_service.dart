@@ -98,8 +98,8 @@ class ParentVoiceService {
     return d;
   }
 
-  /// Đường dẫn file mới cho một lần ghi âm.
-  static Future<String> newPath(String id) async => '${(await _dir()).path}/$id.m4a';
+  /// Đường dẫn file mới cho một lần ghi âm (đuôi theo định dạng: m4a hoặc wav).
+  static Future<String> newPath(String id, [String ext = 'm4a']) async => '${(await _dir()).path}/$id.$ext';
 
   Future<void> save(ParentVoice v) => _store.saveVoice(v);
 
@@ -119,7 +119,48 @@ class ParentVoiceService {
   }
 }
 
-/// Ghi âm giọng bố mẹ (AAC .m4a, mono, nhỏ gọn ~ 0,5 MB/phút). Tối đa [maxSeconds] giây.
+/// Một cách ghi âm để thử (máy tính bảng giá rẻ có thể không chạy được bộ mã hóa này hay bộ khác).
+class _RecMode {
+  final String name;
+  final String ext;
+  final RecordConfig config;
+  const _RecMode(this.name, this.ext, this.config);
+}
+
+const _androidSafe = AndroidRecordConfig(
+  useLegacy: true, // MediaRecorder: ổn định nhất trên máy Android cũ
+  manageBluetooth: false,
+  audioSource: AndroidAudioSource.mic,
+);
+
+/// Thứ tự thử: AAC qua MediaRecorder → AAC qua MediaCodec → WAV thô (chạy được trên mọi máy).
+const _modes = [
+  _RecMode(
+      'aac-legacy',
+      'm4a',
+      RecordConfig(
+          encoder: AudioEncoder.aacLc, bitRate: 64000, sampleRate: 44100, numChannels: 1, androidConfig: _androidSafe)),
+  _RecMode(
+      'aac',
+      'm4a',
+      RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 64000,
+          sampleRate: 44100,
+          numChannels: 1,
+          androidConfig: AndroidRecordConfig(manageBluetooth: false, audioSource: AndroidAudioSource.mic))),
+  _RecMode(
+      'wav',
+      'wav',
+      RecordConfig(
+          encoder: AudioEncoder.wav,
+          sampleRate: 16000,
+          numChannels: 1,
+          androidConfig: AndroidRecordConfig(manageBluetooth: false, audioSource: AndroidAudioSource.mic))),
+];
+
+/// Ghi âm giọng bố mẹ (mono, tối đa [maxSeconds] giây). Tự thử nhiều cách ghi cho tới khi được,
+/// nhớ cách đã chạy được cho lần sau, và kiểm tra file thật sự có dữ liệu.
 class VoiceRecorder {
   final _rec = AudioRecorder();
   final level = ValueNotifier<double>(0); // 0..1 – vẽ thanh âm lượng
@@ -128,29 +169,55 @@ class VoiceRecorder {
   Timer? _timer;
   Stopwatch? _sw;
   String? _path;
+  String lastError = '';
   static const maxSeconds = 30;
+  static int _goodMode = 0; // cách ghi chạy được lần trước
 
   bool get recording => _sw != null;
 
-  /// Bắt đầu ghi vào [path]. Trả false nếu không có quyền micro hoặc lỗi thiết bị.
-  Future<bool> start(String path, {VoidCallback? onAutoStop}) async {
+  /// Bắt đầu ghi cho đoạn [id]. Trả false nếu không ghi được ([lastError] cho biết lý do).
+  Future<bool> start(String id, {VoidCallback? onAutoStop}) async {
+    lastError = '';
     try {
-      if (!await _rec.hasPermission()) return false;
-      await _rec.start(
-        const RecordConfig(encoder: AudioEncoder.aacLc, bitRate: 64000, sampleRate: 44100, numChannels: 1),
-        path: path,
-      );
+      if (!await _rec.hasPermission()) {
+        lastError = 'Chưa có quyền dùng micro.';
+        return false;
+      }
     } catch (e) {
-      debugPrint('Không ghi âm được: $e');
-      return false;
+      debugPrint('Ghi âm – kiểm tra quyền lỗi: $e');
     }
-    _path = path;
+    final order = [
+      _goodMode,
+      for (var i = 0; i < _modes.length; i++)
+        if (i != _goodMode) i
+    ];
+    for (final i in order) {
+      final m = _modes[i];
+      try {
+        final path = await ParentVoiceService.newPath(id, m.ext);
+        await ParentVoiceService.deleteFile(path);
+        await _rec.start(m.config, path: path);
+        _path = path;
+        _goodMode = i;
+        debugPrint('Ghi âm: dùng cách ${m.name} → $path');
+        break;
+      } catch (e) {
+        lastError = 'Không ghi được (${m.name}): $e';
+        debugPrint('Ghi âm lỗi với ${m.name}: $e');
+        try {
+          await _rec.cancel();
+        } catch (_) {}
+      }
+    }
+    if (_path == null) return false;
     _sw = Stopwatch()..start();
     elapsed.value = 0;
-    _ampSub = _rec.onAmplitudeChanged(const Duration(milliseconds: 120)).listen((a) {
-      // dBFS: -45 (im lặng) … 0 (rất to)
-      level.value = ((a.current + 45) / 45).clamp(0.0, 1.0).toDouble();
-    });
+    try {
+      _ampSub = _rec.onAmplitudeChanged(const Duration(milliseconds: 120)).listen((a) {
+        // dBFS: -45 (im lặng) … 0 (rất to)
+        level.value = ((a.current + 45) / 45).clamp(0.0, 1.0).toDouble();
+      }, onError: (_) {});
+    } catch (_) {}
     _timer = Timer.periodic(const Duration(milliseconds: 250), (_) {
       final s = (_sw?.elapsedMilliseconds ?? 0) ~/ 1000;
       if (s != elapsed.value) elapsed.value = s;
@@ -159,22 +226,34 @@ class VoiceRecorder {
     return true;
   }
 
-  /// Dừng ghi. Trả (đường dẫn, thời lượng ms) hoặc null nếu chưa ghi.
+  /// Dừng ghi. Trả (đường dẫn, thời lượng ms) hoặc null nếu không có bản ghi dùng được.
   Future<(String, int)?> stop() async {
     if (_sw == null) return null;
     final ms = _sw!.elapsedMilliseconds;
     _sw = null;
     _timer?.cancel();
     await _ampSub?.cancel();
+    _ampSub = null;
     level.value = 0;
     String? out;
     try {
       out = await _rec.stop();
     } catch (e) {
-      debugPrint('Lỗi dừng ghi âm: $e');
+      lastError = 'Lỗi khi dừng ghi: $e';
+      debugPrint('Ghi âm – dừng lỗi: $e');
     }
-    final p = out ?? _path;
-    return p == null ? null : (p, ms);
+    final p = (out == null || out.isEmpty) ? _path : out;
+    _path = null;
+    if (p == null) return null;
+    final f = File(p);
+    final size = f.existsSync() ? f.lengthSync() : 0;
+    debugPrint('Ghi âm xong: $p · $size byte · $ms ms');
+    if (size < 1000) {
+      lastError = 'File ghi âm rỗng ($size byte). Thử ghi lại nhé.';
+      _goodMode = (_goodMode + 1) % _modes.length; // lần sau thử cách khác
+      return null;
+    }
+    return (p, ms);
   }
 
   Future<void> dispose() async {

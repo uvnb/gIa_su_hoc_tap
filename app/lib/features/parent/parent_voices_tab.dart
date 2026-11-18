@@ -39,6 +39,12 @@ class _ParentVoicesTabState extends ConsumerState<ParentVoicesTab> {
     if (v == null) return;
     await ref.read(parentVoiceProvider).save(v);
     _reload();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: AppColors.success,
+        content: Text('✅ Đã lưu lời nhắn: “${v.caption}”', style: bodyStyle(20, Colors.white)),
+      ));
+    }
   }
 
   @override
@@ -102,7 +108,8 @@ class _ParentVoicesTabState extends ConsumerState<ParentVoicesTab> {
                   icon: const Text('▶️', style: TextStyle(fontSize: 30)),
                 ),
                 title: Text(v.caption.isEmpty ? '(không có chú thích)' : v.caption, style: bodyStyle(20)),
-                subtitle: Text('${who(v.childId)} · ${(v.durationMs / 1000).toStringAsFixed(0)} giây', style: bodyStyle(16)),
+                subtitle:
+                    Text('${who(v.childId)} · ${(v.durationMs / 1000).toStringAsFixed(0)} giây', style: bodyStyle(16)),
                 trailing: Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 6, children: [
                   Text(v.enabled ? 'Đang dùng' : 'Tạm tắt', style: bodyStyle(15)),
                   Switch(
@@ -160,7 +167,9 @@ class _RecordVoiceDialogState extends ConsumerState<RecordVoiceDialog> {
   String? _path;
   int _ms = 0;
   bool _recording = false;
+  bool _busy = false;
   String _error = '';
+  DateTime? _downAt; // giữ nút ≥ 1 giây rồi thả = dừng (kiểu "giữ để nói")
 
   @override
   void dispose() {
@@ -170,27 +179,39 @@ class _RecordVoiceDialogState extends ConsumerState<RecordVoiceDialog> {
   }
 
   Future<void> _toggle() async {
+    if (_busy) return;
     if (_recording) {
       await _stop();
       return;
     }
+    _busy = true;
     setState(() => _error = '');
-    if (!await ensurePermission(Permission.microphone)) {
-      setState(() => _error = 'Cần cho phép dùng micro (Cài đặt → Ứng dụng → Cú Tò Mò → Quyền).');
-      return;
+    try {
+      if (!await ensurePermission(Permission.microphone)) {
+        setState(() => _error = 'Cần cho phép dùng micro: Cài đặt → Ứng dụng → Cú Tò Mò → Quyền → Micrô.');
+        return;
+      }
+      await ref.read(ttsProvider).stop();
+      await ref.read(parentVoiceProvider).stop();
+      if (_path != null) await ParentVoiceService.deleteFile(_path!); // ghi lại → bỏ bản cũ
+      final ok = await _rec.start(_id, onAutoStop: _stop);
+      if (!mounted) return;
+      setState(() {
+        _recording = ok;
+        if (ok) {
+          _path = null;
+          _ms = 0;
+        } else {
+          _error = _rec.lastError.isEmpty ? 'Không ghi âm được. Thử lại nhé.' : _rec.lastError;
+        }
+      });
+    } finally {
+      _busy = false;
     }
-    await ref.read(ttsProvider).stop();
-    await ref.read(parentVoiceProvider).stop();
-    final path = await ParentVoiceService.newPath(_id);
-    final ok = await _rec.start(path, onAutoStop: _stop);
-    if (!mounted) return;
-    setState(() {
-      _recording = ok;
-      if (!ok) _error = 'Không ghi âm được. Thử lại nhé.';
-    });
   }
 
   Future<void> _stop() async {
+    if (!_recording) return;
     final r = await _rec.stop();
     if (!mounted) return;
     setState(() {
@@ -198,6 +219,8 @@ class _RecordVoiceDialogState extends ConsumerState<RecordVoiceDialog> {
       if (r != null) {
         _path = r.$1;
         _ms = r.$2;
+      } else {
+        _error = _rec.lastError.isEmpty ? 'Chưa ghi được tiếng. Bấm 🎙️ ghi lại nhé.' : _rec.lastError;
       }
     });
   }
@@ -213,7 +236,10 @@ class _RecordVoiceDialogState extends ConsumerState<RecordVoiceDialog> {
       );
 
   Future<void> _cancel() async {
-    if (_recording) await _rec.stop();
+    if (_recording) {
+      final r = await _rec.stop();
+      if (r != null) await ParentVoiceService.deleteFile(r.$1);
+    }
     if (_path != null) await ParentVoiceService.deleteFile(_path!);
     if (mounted) Navigator.pop(context);
   }
@@ -265,7 +291,8 @@ class _RecordVoiceDialogState extends ConsumerState<RecordVoiceDialog> {
                 ),
             ]),
             const SizedBox(height: 14),
-            Text('3. Chú thích (đoạn ghi âm này nói gì, để làm gì)', style: bodyStyle(20, AppColors.ink, FontWeight.w800)),
+            Text('3. Chú thích (đoạn ghi âm này nói gì, để làm gì)',
+                style: bodyStyle(20, AppColors.ink, FontWeight.w800)),
             const SizedBox(height: 6),
             TextField(
               controller: _caption,
@@ -286,11 +313,20 @@ class _RecordVoiceDialogState extends ConsumerState<RecordVoiceDialog> {
                 ),
             ]),
             const SizedBox(height: 14),
-            Text('4. Ghi âm (tối đa ${VoiceRecorder.maxSeconds} giây)', style: bodyStyle(20, AppColors.ink, FontWeight.w800)),
+            Text('4. Ghi âm (tối đa ${VoiceRecorder.maxSeconds} giây)',
+                style: bodyStyle(20, AppColors.ink, FontWeight.w800)),
             const SizedBox(height: 8),
             Row(children: [
-              GestureDetector(
-                onTap: _toggle,
+              // Bấm 1 lần để bắt đầu, bấm lần nữa để dừng – hoặc giữ nút trong lúc nói rồi thả ra.
+              Listener(
+                onPointerDown: (_) {
+                  _downAt = DateTime.now();
+                  _toggle();
+                },
+                onPointerUp: (_) {
+                  final held = _downAt != null && DateTime.now().difference(_downAt!) > const Duration(seconds: 1);
+                  if (held && _recording) _stop();
+                },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   width: 110,
@@ -310,7 +346,8 @@ class _RecordVoiceDialogState extends ConsumerState<RecordVoiceDialog> {
                     ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         ValueListenableBuilder<int>(
                           valueListenable: _rec.elapsed,
-                          builder: (_, s, __) => Text('Đang ghi… 0:${s.toString().padLeft(2, '0')} / 0:30 – bấm ⏹️ để dừng',
+                          builder: (_, s, __) => Text(
+                              '🔴 Đang ghi… 0:${s.toString().padLeft(2, '0')} / 0:30 – bấm ⏹️ để dừng',
                               style: titleStyle(22, const Color(0xFFE0457B))),
                         ),
                         const SizedBox(height: 8),
@@ -329,14 +366,17 @@ class _RecordVoiceDialogState extends ConsumerState<RecordVoiceDialog> {
                       ])
                     : has
                         ? Wrap(spacing: 10, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                            Text('Đã ghi ${(_ms / 1000).toStringAsFixed(1)} giây', style: titleStyle(22, AppColors.success)),
+                            Text('Đã ghi ${(_ms / 1000).toStringAsFixed(1)} giây',
+                                style: titleStyle(22, AppColors.success)),
                             OutlinedButton(
                               onPressed: () => ref.read(parentVoiceProvider).playOne(_voice()),
                               child: const Text('▶️ Nghe lại'),
                             ),
                             TextButton(onPressed: _toggle, child: const Text('🔁 Ghi lại')),
+                            Text('→ bấm 💾 Lưu ở dưới', style: bodyStyle(17, AppColors.success)),
                           ])
-                        : Text('Bấm nút 🎙️ rồi nói, bấm lần nữa để dừng.', style: bodyStyle(19)),
+                        : Text('Bấm nút 🎙️ rồi nói, bấm ⏹️ để dừng (hoặc giữ nút trong lúc nói rồi thả ra).',
+                            style: bodyStyle(19)),
               ),
             ]),
             if (_error.isNotEmpty)
@@ -350,7 +390,8 @@ class _RecordVoiceDialogState extends ConsumerState<RecordVoiceDialog> {
       actions: [
         TextButton(onPressed: _cancel, child: const Text('Hủy')),
         ElevatedButton(
-          onPressed: has && _ms >= 500 ? () => Navigator.pop(context, _voice()) : null,
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
+          onPressed: has && _ms >= 300 ? () => Navigator.pop(context, _voice()) : null,
           child: const Text('💾 Lưu'),
         ),
       ],

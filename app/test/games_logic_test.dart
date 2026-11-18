@@ -1,6 +1,8 @@
 import 'dart:math';
 
+import 'package:cu_to_mo/features/games/balloon/balloon_logic.dart';
 import 'package:cu_to_mo/features/games/blocks/block_logic.dart';
+import 'package:cu_to_mo/features/games/memory/memory_logic.dart';
 import 'package:cu_to_mo/features/games/blocks/block_math.dart';
 import 'package:cu_to_mo/features/games/runner/word_bank.dart';
 import 'package:cu_to_mo/models/app_settings.dart';
@@ -301,6 +303,93 @@ void main() {
       expect(back.gameDailyGoal, 500);
       expect(back.gameMusic, isFalse);
       expect(AppSettings.fromMap({'ttsRate': 0.4}).gameMinutes, 60); // bản cũ chưa có trường mới
+    });
+  });
+
+  group('Bóng Bay Phép Tính', () {
+    test('bóng "đúng" luôn hợp mục tiêu, bóng "sai" luôn không hợp; phép tính tính đúng', () {
+      final rnd = Random(11);
+      for (var grade = 1; grade <= 5; grade++) {
+        for (var level = 1; level <= 8; level++) {
+          for (var k = 0; k < 40; k++) {
+            final g = makeGoal(grade: grade, level: level, rnd: rnd);
+            for (final good in [true, false]) {
+              final b = makeBalloon(g, good: good, grade: grade, level: level, rnd: rnd);
+              expect(b.value, evalExpr(b.label));
+              expect(b.value, greaterThanOrEqualTo(0));
+              expect(b.good, g.test(b.value));
+              expect(b.good, good, reason: '${g.title} – ${b.label}');
+            }
+          }
+        }
+      }
+    });
+
+    test('lớp 1 chỉ cộng trừ, không nhân chia; lớp 2 cấp 1 chưa có nhân', () {
+      final rnd = Random(4);
+      for (var level = 1; level <= 10; level++) {
+        for (var k = 0; k < 50; k++) {
+          final g = makeGoal(grade: 1, level: level, rnd: rnd);
+          expect(g.kind, 'equal');
+          final b = makeBalloon(g, good: rnd.nextBool(), grade: 1, level: level, rnd: rnd);
+          expect(b.label.contains('×') || b.label.contains(':'), isFalse);
+        }
+      }
+      final g2 = makeGoal(grade: 2, level: 1, rnd: rnd);
+      final b2 = makeBalloon(g2, good: true, grade: 2, level: 1, rnd: rnd);
+      expect(b2.label.contains('×'), isFalse);
+    });
+
+    test('lên cấp: bóng nhanh hơn, ra dày hơn', () {
+      for (var n = 1; n < 10; n++) {
+        expect(BalloonLevel(n + 1).riseSpeed, greaterThanOrEqualTo(BalloonLevel(n).riseSpeed));
+        expect(BalloonLevel(n + 1).spawnEvery, lessThanOrEqualTo(BalloonLevel(n).spawnEvery));
+      }
+    });
+  });
+
+  group('Lật Thẻ Trí Nhớ', () {
+    test('mỗi cặp đúng 2 thẻ, số cặp theo cấp, phép tính khớp kết quả', () {
+      final rnd = Random(8);
+      for (var grade = 1; grade <= 5; grade++) {
+        for (var level = 1; level <= 7; level++) {
+          final cards = makeBoard(grade: grade, level: level, rnd: rnd);
+          final n = pairsForLevel(level);
+          expect(cards.length, 2 * n);
+          final byPair = <int, List<MemCard>>{};
+          for (final c in cards) {
+            byPair.putIfAbsent(c.pair, () => []).add(c);
+          }
+          expect(byPair.length, n);
+          for (final pair in byPair.values) {
+            expect(pair.length, 2);
+            if (themeFor(grade, level) == 'math') {
+              final expr = pair.firstWhere((c) => c.face.contains(' '));
+              final res = pair.firstWhere((c) => !c.face.contains(' '));
+              expect(evalExpr(expr.face), int.parse(res.face));
+            } else {
+              expect(pair.where((c) => c.picture).length, 1);
+            }
+          }
+          // các mặt thẻ không trùng nhau (tránh hai cặp giống hệt)
+          expect(cards.map((c) => c.face).toSet().length, cards.length);
+        }
+      }
+    });
+
+    test('lớp 1–2 không có tiếng Anh; lớp 3 có', () {
+      for (var level = 1; level <= 6; level++) {
+        expect(themeFor(1, level), isNot('en'));
+        expect(themeFor(2, level), isNot('en'));
+      }
+      expect([for (var l = 1; l <= 3; l++) themeFor(3, l)], contains('en'));
+    });
+
+    test('sao theo số lượt', () {
+      expect(starsFor(4, 4), 3);
+      expect(starsFor(4, 6), 3);
+      expect(starsFor(4, 8), 2);
+      expect(starsFor(4, 12), 1);
     });
   });
 }

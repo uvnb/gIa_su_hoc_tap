@@ -132,7 +132,8 @@ class _ParentGamesTabState extends ConsumerState<ParentGamesTab> {
                   Text(
                       '${byId(w.childId)?.avatar ?? '👧'} ${byId(w.childId)?.nickname ?? 'Bé'} · ${w.day} · ${wishStatusLabel(w)}',
                       style: bodyStyle(17)),
-                  if (w.reply.isNotEmpty) Text('Bố mẹ nhắn: “${w.reply}”', style: bodyStyle(17, const Color(0xFFE0457B))),
+                  if (w.reply.isNotEmpty)
+                    Text('Bố mẹ nhắn: “${w.reply}”', style: bodyStyle(17, const Color(0xFFE0457B))),
                 ]),
               ),
               if (w.pending) ...[
@@ -158,13 +159,17 @@ class _ParentGamesTabState extends ConsumerState<ParentGamesTab> {
 
         // ------------------------------------------------ cài đặt giờ chơi
         Text('⏱️ Giờ chơi trò chơi', style: titleStyle(28)),
-        _row('Cho phép chơi trò chơi', Align(
-          alignment: Alignment.centerLeft,
-          child: Switch(value: s.gamesEnabled, onChanged: (v) => _save(s.copyWith(gamesEnabled: v))),
-        )),
+        _row(
+            'Cho phép chơi trò chơi',
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Switch(value: s.gamesEnabled, onChanged: (v) => _save(s.copyWith(gamesEnabled: v))),
+            )),
         _row(
           'Thời gian chơi mỗi ngày',
-          _choices<int>(s.gameMinutes, {15: '15 phút', 30: '30 phút', 45: '45 phút', 60: '1 tiếng', 90: '1,5 tiếng', 120: '2 tiếng'},
+          _choices<int>(
+              s.gameMinutes,
+              {15: '15 phút', 30: '30 phút', 45: '45 phút', 60: '1 tiếng', 90: '1,5 tiếng', 120: '2 tiếng'},
               (v) => _save(s.copyWith(gameMinutes: v))),
           note: 'Tính riêng, không trừ vào giờ học',
         ),
@@ -180,10 +185,12 @@ class _ParentGamesTabState extends ConsumerState<ParentGamesTab> {
               (v) => _save(s.copyWith(gameDailyGoal: v))),
           note: 'Phần thưởng đặc biệt mỗi ngày',
         ),
-        _row('Nhạc nền trò chơi', Align(
-          alignment: Alignment.centerLeft,
-          child: Switch(value: s.gameMusic, onChanged: (v) => _save(s.copyWith(gameMusic: v))),
-        )),
+        _row(
+            'Nhạc nền trò chơi',
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Switch(value: s.gameMusic, onChanged: (v) => _save(s.copyWith(gameMusic: v))),
+            )),
         if (active != null)
           _row(
             'Cho ${active.nickname} thêm giờ hôm nay',
@@ -193,8 +200,8 @@ class _ParentGamesTabState extends ConsumerState<ParentGamesTab> {
                   onPressed: () async {
                     await ref.read(gameTimerProvider.notifier).grantExtra(m);
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context)
-                          .showSnackBar(SnackBar(content: Text('Đã cho ${active.nickname} thêm $m phút chơi hôm nay.')));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Đã cho ${active.nickname} thêm $m phút chơi hôm nay.')));
                     }
                   },
                   child: Text('+$m phút'),
@@ -210,12 +217,15 @@ class _ParentGamesTabState extends ConsumerState<ParentGamesTab> {
             Text('${p.avatar} ${p.nickname}', style: titleStyle(24)),
             const SizedBox(height: 6),
             Wrap(spacing: 12, runSpacing: 12, children: [
-              _kpi('🎮', '${(store.gameSecondsToday(p.id) / 60).round()}/${s.gameMinutes + store.gameExtraMinutesToday(p.id)}′',
+              _kpi(
+                  '🎮',
+                  '${(store.gameSecondsToday(p.id) / 60).round()}/${s.gameMinutes + store.gameExtraMinutesToday(p.id)}′',
                   'phút chơi hôm nay'),
               _kpi('🏆', '${store.gamePointsToday(p.id)}', 'điểm hôm nay'),
               _kpi('💰', '${store.gamePointsTotal(p.id)}', 'tổng điểm'),
-              _kpi('🧩', 'Cấp ${store.gameLevel(p.id, 'blocks')}', 'Xếp Khối Toán (kỷ lục ${store.gameBest(p.id, 'blocks')})'),
-              _kpi('🦉', 'Cấp ${store.gameLevel(p.id, 'runner')}', 'Cú Từ Ngữ (kỷ lục ${store.gameBest(p.id, 'runner')})'),
+              for (final g in gameInfos)
+                _kpi(
+                    g.emoji, 'Cấp ${store.gameLevel(p.id, g.id)}', '${g.title} (kỷ lục ${store.gameBest(p.id, g.id)})'),
             ]),
             const SizedBox(height: 10),
             Text('Phút chơi 7 ngày', style: bodyStyle(17, AppColors.ink, FontWeight.w800)),

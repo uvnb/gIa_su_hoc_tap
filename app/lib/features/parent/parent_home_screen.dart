@@ -257,7 +257,8 @@ class _ReportTabState extends ConsumerState<_ReportTab> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         for (final h in r.hardTypes)
-                          Text('• ${_typeName('${h['type']}')} – ${h['count']} câu, gợi ý trung bình bậc ${h['avg_hint']}',
+                          Text(
+                              '• ${_typeName('${h['type']}')} – ${h['count']} câu, gợi ý trung bình bậc ${h['avg_hint']}',
                               style: bodyStyle(19)),
                       ],
                     ),
@@ -462,11 +463,16 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
         _row('Âm thanh hiệu ứng', Switch(value: s.soundEffects, onChanged: (v) => _save(s.copyWith(soundEffects: v)))),
         const Divider(height: 32),
         Text('⏰ Thời gian', style: titleStyle(26)),
-        _row('Nghỉ giải lao sau', _choices<int>(s.breakMinutes, {0: 'Tắt', 15: '15 phút', 20: '20 phút', 30: '30 phút'},
-            (v) => _save(s.copyWith(breakMinutes: v)))),
-        _row('Giới hạn mỗi ngày', _choices<int>(s.dailyLimitMinutes,
-            {0: 'Không giới hạn', 30: '30 phút', 45: '45 phút', 60: '60 phút', 90: '90 phút'},
-            (v) => _save(s.copyWith(dailyLimitMinutes: v)))),
+        _row(
+            'Nghỉ giải lao sau',
+            _choices<int>(s.breakMinutes, {0: 'Tắt', 15: '15 phút', 20: '20 phút', 30: '30 phút'},
+                (v) => _save(s.copyWith(breakMinutes: v)))),
+        _row(
+            'Giới hạn mỗi ngày',
+            _choices<int>(
+                s.dailyLimitMinutes,
+                {0: 'Không giới hạn', 30: '30 phút', 45: '45 phút', 60: '60 phút', 90: '90 phút'},
+                (v) => _save(s.copyWith(dailyLimitMinutes: v)))),
         _row(
           'Giờ đi ngủ',
           Wrap(spacing: 10, children: [
@@ -484,12 +490,15 @@ class _SettingsTabState extends ConsumerState<_SettingsTab> {
         ),
         const Divider(height: 32),
         Text('🤖 Trí tuệ nhân tạo', style: titleStyle(26)),
-        _row('Nhà cung cấp AI', _choices<String>(s.provider,
-            {'': 'Theo máy chủ', 'anthropic': 'Claude', 'openai': 'ChatGPT'}, (v) => _save(s.copyWith(provider: v))),
+        _row(
+            'Nhà cung cấp AI',
+            _choices<String>(s.provider, {'': 'Theo máy chủ', 'anthropic': 'Claude', 'openai': 'ChatGPT'},
+                (v) => _save(s.copyWith(provider: v))),
             note: 'Khóa API chỉ nằm trên máy chủ, không lưu trên máy tính bảng'),
-        _row('Mức', _choices<String>(s.tier,
-            {'tiet_kiem': 'Tiết kiệm', 'can_bang': 'Cân bằng', 'thong_minh': 'Thông minh'},
-            (v) => _save(s.copyWith(tier: v)))),
+        _row(
+            'Mức',
+            _choices<String>(s.tier, {'tiet_kiem': 'Tiết kiệm', 'can_bang': 'Cân bằng', 'thong_minh': 'Thông minh'},
+                (v) => _save(s.copyWith(tier: v)))),
         _row(
           'Địa chỉ máy chủ',
           Row(children: [
@@ -531,7 +540,8 @@ class _ProfilesTab extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Xóa dữ liệu của ${p.nickname}?', style: titleStyle(26)),
-        content: Text('Xóa hồ sơ, sao, thời gian học trên máy và toàn bộ lịch sử học trên máy chủ. Không hoàn tác được.',
+        content: Text(
+            'Xóa hồ sơ, sao, thời gian học trên máy và toàn bộ lịch sử học trên máy chủ. Không hoàn tác được.',
             style: bodyStyle(19)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Thôi')),
@@ -552,8 +562,8 @@ class _ProfilesTab extends ConsumerWidget {
     }
     if (!serverOk) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Chưa xóa được trên máy chủ (mất mạng?). Hãy thử lại khi có mạng.')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Chưa xóa được trên máy chủ (mất mạng?). Hãy thử lại khi có mạng.')));
       }
       return;
     }
@@ -606,18 +616,22 @@ class _SafetyTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        item('📌 Ghim màn hình',
+        item(
+            '📌 Ghim màn hình',
             'Cài đặt → Bảo mật → Ghim ứng dụng (Screen pinning) → Bật. Mở Cú Tò Mò, vào màn đa nhiệm, chạm biểu tượng ứng dụng → Ghim. '
                 'Bé sẽ chỉ dùng được ứng dụng này cho tới khi bố mẹ bỏ ghim. ⚠️ Tên menu có thể khác giữa Android 11 và 13.'),
         item('👪 Google Family Link',
             'Cài Family Link trên điện thoại bố mẹ để giới hạn thời gian dùng máy và chặn ứng dụng khác khi bé học.'),
-        item('🔐 Dữ liệu của bé',
+        item(
+            '🔐 Dữ liệu của bé',
             'Ứng dụng chỉ lưu biệt danh, lớp, sao và lịch sử học. Ảnh bài tập không được lưu trên máy chủ. '
                 'Giọng nói được nhận dạng ngay trên máy. Bố mẹ có thể xóa dữ liệu của từng bé ở thẻ "Hồ sơ bé".'),
-        item('🦉 Vì sao Cú không nói đáp án?',
+        item(
+            '🦉 Vì sao Cú không nói đáp án?',
             'Cú dùng phương pháp hỏi gợi mở: chia nhỏ vấn đề, đưa ví dụ tương tự, dùng que tính… để bé TỰ tìm ra. '
                 'Nếu bé bí quá 12 lượt, Cú đề nghị "để dành hỏi thầy cô" và ghi lại trong báo cáo để bố mẹ kèm bé.'),
-        item('🗣️ Chuẩn bị giọng nói',
+        item(
+            '🗣️ Chuẩn bị giọng nói',
             'Cài đặt → Hệ thống → Ngôn ngữ & nhập liệu → Đầu ra chuyển văn bản thành giọng nói → chọn Google và tải giọng Tiếng Việt. '
                 'Cập nhật "Speech Services by Google" và tải gói Tiếng Việt ngoại tuyến nếu có.'),
       ],

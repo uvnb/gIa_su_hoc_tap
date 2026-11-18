@@ -9,6 +9,8 @@ import 'features/break_time/break_time_screen.dart';
 import 'features/break_time/sleep_screen.dart';
 import 'features/capture/capture_screen.dart';
 import 'features/capture/crop_screen.dart';
+import 'features/games/balloon/balloon_game_screen.dart';
+import 'features/games/memory/memory_game_screen.dart';
 import 'features/games/blocks/block_game_screen.dart';
 import 'features/games/games_hub_screen.dart';
 import 'features/games/runner/word_runner_screen.dart';
@@ -50,6 +52,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/games', builder: (_, __) => const GamesHubScreen()),
       GoRoute(path: '/games/blocks', builder: (_, __) => const BlockGameScreen()),
       GoRoute(path: '/games/runner', builder: (_, __) => const WordRunnerScreen()),
+      GoRoute(path: '/games/balloon', builder: (_, __) => const BalloonGameScreen()),
+      GoRoute(path: '/games/memory', builder: (_, __) => const MemoryGameScreen()),
       GoRoute(path: '/wish', builder: (_, __) => const WishScreen()),
       GoRoute(path: '/sleep', builder: (_, s) => SleepScreen(reason: (s.extra as String?) ?? 'limit')),
       GoRoute(path: '/parent', builder: (_, s) => ParentGateScreen(next: (s.extra as String?) ?? '/parent/home')),
