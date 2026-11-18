@@ -53,3 +53,33 @@ notes = [(523.25, 0.0), (659.25, 0.09), (783.99, 0.18), (1046.5, 0.27)]
 tracks = [(int(SR * start), tone(f, 0.7 - start * 0.5, vol=0.35, decay=3.2)) for f, start in notes]
 write("tada", mix(*tracks))
 print("Đã tạo:", ", ".join(p.name for p in sorted(OUT.glob("*.wav"))))
+
+
+# ================= âm thanh Góc trò chơi =================
+def sweep(f0, f1, dur, vol=0.5, decay=6.0, wobble=0.0):
+    n = int(SR * dur)
+    out, ph = [], 0.0
+    for i in range(n):
+        t = i / SR
+        f = f0 + (f1 - f0) * (t / dur)
+        f *= 1 + wobble * math.sin(2 * math.pi * 18 * t)
+        ph += 2 * math.pi * f / SR
+        out.append(vol * min(1.0, t / 0.005) * math.exp(-decay * t) * math.sin(ph))
+    return out
+
+
+# jump: "boing" vút lên
+write("jump", sweep(320, 980, 0.26, vol=0.5, decay=5, wobble=0.04))
+# bump: "bịch" trầm, mềm – không chói tai
+write("bump", [s * 0.9 for s in sweep(170, 70, 0.28, vol=0.6, decay=9)])
+# clear: chuỗi chuông lấp lánh đi lên khi xóa hàng
+notes = [(1046.5, 0.0), (1318.5, 0.05), (1568.0, 0.10), (2093.0, 0.15)]
+write("clear", mix(*[(int(SR * st), tone(f, 0.32, vol=0.3, decay=7, harmonics=(1.0, 0.4, 0.15))) for f, st in notes]))
+# unlock: "đinh-đoong" đi lên khi mở khóa khối bí ẩn
+write("unlock", mix((0, tone(783.99, 0.3, vol=0.4, decay=6)), (int(SR * 0.12), tone(1046.5, 0.4, vol=0.4, decay=5))))
+# oops: hai nốt đi xuống rất nhẹ – "ơ…", không phải tiếng phạt
+write("oops", mix((0, tone(659.25, 0.22, vol=0.25, decay=8, harmonics=(1.0, 0.2))),
+                  (int(SR * 0.13), tone(523.25, 0.28, vol=0.25, decay=8, harmonics=(1.0, 0.2)))))
+# coin: nhặt sao
+write("coin", mix((0, tone(987.77, 0.08, vol=0.35, decay=4)), (int(SR * 0.07), tone(1318.5, 0.3, vol=0.35, decay=6))))
+print("Đã tạo âm trò chơi.")

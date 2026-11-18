@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/game_timer.dart';
 import '../../core/providers.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pin_pad.dart';
@@ -12,7 +13,8 @@ import '../../widgets/pin_pad.dart';
 final parentUnlockedProvider = StateProvider<bool>((ref) => false);
 
 /// ParentGate (mục 14.6): bàn phím PIN; khóa 1 phút sau 3 lần sai.
-/// next = đường dẫn mở sau khi đúng PIN, hoặc "grant15" = cho bé thêm 15 phút.
+/// next = đường dẫn mở sau khi đúng PIN, "grant15" = cho bé thêm 15 phút học,
+/// "grantGame15" = cho bé thêm 15 phút chơi trò chơi.
 class ParentGateScreen extends ConsumerStatefulWidget {
   const ParentGateScreen({super.key, this.next = '/parent/home'});
   final String next;
@@ -65,6 +67,11 @@ class _ParentGateScreenState extends ConsumerState<ParentGateScreen> {
     if (!ok) {
       setState(() => _msg = 'Mã PIN chưa đúng');
       await _checkLock();
+      return;
+    }
+    if (widget.next == 'grantGame15') {
+      await ref.read(gameTimerProvider.notifier).grantExtra(15);
+      if (mounted) context.pop(true);
       return;
     }
     if (widget.next == 'grant15') {

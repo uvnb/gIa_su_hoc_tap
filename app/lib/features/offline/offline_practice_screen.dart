@@ -54,12 +54,19 @@ class _OfflinePracticeScreenState extends ConsumerState<OfflinePracticeScreen> {
     super.dispose();
   }
 
-  void _owl(String text, String mood) {
+  Future<void> _owl(String text, String mood) {
     setState(() {
       _say = text;
       _mood = mood;
     });
-    ref.read(ttsProvider).say(text);
+    return ref.read(ttsProvider).say(text);
+  }
+
+  /// Phát lời bố mẹ ghi âm (khen / động viên) sau khi Cú nói xong.
+  void _parentVoice(Future<void> spoken, String purpose) {
+    final childId = ref.read(activeChildProvider)?.id;
+    final voice = ref.read(parentVoiceProvider);
+    spoken.then((_) => voice.play(purpose, childId: childId));
   }
 
   void _newProblem() {
@@ -119,24 +126,27 @@ class _OfflinePracticeScreenState extends ConsumerState<OfflinePracticeScreen> {
       });
       ref.read(profilesProvider.notifier).addStars(stars);
       ref.read(soundProvider).tada();
-      _owl('Bạn tự tìm ra rồi! 🎉 Giỏi quá!', 'celebrating');
+      _parentVoice(_owl('Bạn tự tìm ra rồi! 🎉 Giỏi quá!', 'celebrating'), 'praise');
       return;
     }
     _wrong++;
     if (_wrong >= 6) {
       setState(() => _solved = true);
-      _owl('Bạn cố gắng nhiều lắm rồi! Mình để dành câu này hỏi thầy cô nhé. Làm câu khác nha!', 'encouraging');
+      _parentVoice(
+          _owl('Bạn cố gắng nhiều lắm rồi! Mình để dành câu này hỏi thầy cô nhé. Làm câu khác nha!', 'encouraging'),
+          'encourage');
       return;
     }
     if (_wrong % 2 == 0 || _level == 0) _level = _level >= 5 ? 5 : _level + 1;
     if (_level >= 4) setState(() => _showTool = true);
-    _owl('Bạn tính thế nào ra $v? ${_hint(_level)}', 'encouraging');
+    final spoken = _owl('Bạn tính thế nào ra $v? ${_hint(_level)}', 'encouraging');
+    if (_wrong == 3) _parentVoice(spoken, 'encourage');
   }
 
   void _tooHard() {
     _level = _level < 3 ? 3 : (_level >= 5 ? 5 : _level + 1);
     if (_level >= 4) setState(() => _showTool = true);
-    _owl(_hint(_level), 'encouraging');
+    _parentVoice(_owl(_hint(_level), 'encouraging'), 'encourage');
   }
 
   @override

@@ -289,6 +289,7 @@ class TutorController extends StateNotifier<TutorState> {
   }
 
   void _applyTurn(TurnResult r) {
+    final prevHint = state.hintLevel;
     final phase = switch (r.state) {
       'solved' => TutorPhase.solved,
       'explaining' => TutorPhase.explaining,
@@ -333,7 +334,15 @@ class TutorController extends StateNotifier<TutorState> {
       _ref.read(soundProvider).ting();
     }
     if (phase == TutorPhase.solved) _ref.read(soundProvider).tada();
-    _say(r.owl.say);
+    final spoken = _say(r.owl.say);
+    // Lời ghi âm của bố mẹ (nếu có): khen khi bé tự giải xong, động viên khi bé gặp khó.
+    final childId = _ref.read(activeChildProvider)?.id;
+    final voice = _ref.read(parentVoiceProvider);
+    if (phase == TutorPhase.solved) {
+      spoken.then((_) => voice.play('praise', childId: childId));
+    } else if (phase == TutorPhase.parked || (r.hintLevel >= 3 && prevHint < 3)) {
+      spoken.then((_) => voice.play('encourage', childId: childId));
+    }
   }
 
   // ------------------------------------------------------------------ sau khi làm xong

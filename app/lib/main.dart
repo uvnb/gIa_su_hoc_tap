@@ -4,10 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_router.dart';
 import 'core/local_store.dart';
+import 'core/music_service.dart';
+import 'core/parent_voice_service.dart';
 import 'core/providers.dart';
 import 'core/sound_service.dart';
 import 'core/tts_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/parent_voice_banner.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,12 +29,19 @@ Future<void> main() async {
       .init(rate: settings.ttsRate, pitch: settings.ttsPitch, voice: settings.voiceName)
       .catchError((Object e) => debugPrint('TTS: $e'));
   sound.init().catchError((Object e) => debugPrint('Âm thanh: $e'));
+  final music = MusicService()..enabled = settings.gameMusic;
+  music.init().catchError((Object e) => debugPrint('Nhạc: $e'));
+  // Cú nói → nhạc nền nhỏ lại cho bé nghe rõ.
+  tts.speaking.addListener(() => music.duck(tts.speaking.value));
+  final parentVoice = ParentVoiceService(store, tts, music);
 
   runApp(ProviderScope(
     overrides: [
       localStoreProvider.overrideWithValue(store),
       ttsProvider.overrideWithValue(tts),
       soundProvider.overrideWithValue(sound),
+      musicProvider.overrideWithValue(music),
+      parentVoiceProvider.overrideWithValue(parentVoice),
     ],
     child: const CuToMoApp(),
   ));
@@ -53,7 +63,8 @@ class CuToMoApp extends ConsumerWidget {
         final mq = MediaQuery.of(context);
         return MediaQuery(
           data: mq.copyWith(textScaler: mq.textScaler.clamp(minScaleFactor: 1.0, maxScaleFactor: 1.15)),
-          child: child!,
+          // Băng "💌 Lời nhắn của bố mẹ" nổi trên mọi màn khi đang phát ghi âm của bố mẹ.
+          child: Stack(children: [child!, const ParentVoiceBanner()]),
         );
       },
     );

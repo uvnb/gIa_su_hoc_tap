@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/local_store.dart';
 import '../../core/providers.dart';
 import '../../models/child_profile.dart';
 import '../../theme/app_theme.dart';
@@ -34,12 +35,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       final child = ref.read(activeChildProvider);
       if (!_greetedThisLaunch && child != null) {
         _greetedThisLaunch = true;
-        ref.read(ttsProvider).say('Chào ${child.nickname}! Hôm nay mình học gì nào?');
+        _greet(child);
       }
     });
     Future.delayed(const Duration(seconds: 4), () {
       if (mounted) setState(() => _waving = false);
     });
+  }
+
+  /// Lời chào: lần mở app đầu tiên trong ngày phát lời chào bố mẹ ghi âm (nếu có), còn lại Cú chào.
+  Future<void> _greet(ChildProfile child) async {
+    final store = ref.read(localStoreProvider);
+    final key = 'greet|${child.id}|${LocalStore.dayKey(DateTime.now())}';
+    if (store.metaString(key) == null) {
+      await store.setMeta(key, '1');
+      final played =
+          await ref.read(parentVoiceProvider).play('greeting', childId: child.id, cooldown: Duration.zero);
+      if (played) return;
+    }
+    ref.read(ttsProvider).say('Chào ${child.nickname}! Hôm nay mình học gì nào?');
   }
 
   /// Hết giờ học / giờ ngủ → Cú đi ngủ, khóa phiên mới (FR-51, FR-52).
@@ -134,6 +148,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       if (_guard()) context.push('/mystery');
                     },
                   ),
+                  // Góc trò chơi có giờ chơi riêng do bố mẹ đặt (không tính vào giờ học).
+                  BigButton(
+                    emoji: '🎮',
+                    label: 'Trò chơi',
+                    color: AppColors.success,
+                    onTap: () => context.push('/games'),
+                  ),
                 ],
               ),
               const SizedBox(height: 14),
@@ -177,11 +198,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           const SizedBox(width: 10),
-          IconButton(
-            tooltip: 'Góc phụ huynh',
-            onPressed: () => context.push('/parent'),
-            icon: const Text('⚙️', style: TextStyle(fontSize: 34)),
-          ),
+          Stack(clipBehavior: Clip.none, children: [
+            IconButton(
+              tooltip: 'Góc phụ huynh',
+              onPressed: () => context.push('/parent'),
+              icon: const Text('⚙️', style: TextStyle(fontSize: 34)),
+            ),
+            // bé gửi điều ước mà bố mẹ chưa xem
+            if (ref.watch(pendingWishCountProvider) > 0)
+              const Positioned(right: -2, top: -4, child: IgnorePointer(child: Text('💌', style: TextStyle(fontSize: 26)))),
+          ]),
         ],
       );
 

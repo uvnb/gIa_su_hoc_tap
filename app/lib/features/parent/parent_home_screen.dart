@@ -9,7 +9,9 @@ import '../../models/child_profile.dart';
 import '../../models/tutor_models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pin_pad.dart';
+import 'parent_games_tab.dart';
 import 'parent_gate_screen.dart';
+import 'parent_voices_tab.dart';
 import 'voice_picker.dart';
 
 /// Góc phụ huynh (nhóm F): báo cáo, đáp án tham khảo, cài đặt, hồ sơ bé, an toàn.
@@ -42,23 +44,35 @@ class _ParentHomeScreenState extends ConsumerState<ParentHomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (!ref.watch(parentUnlockedProvider)) return const Scaffold();
+    final pendingWishes = ref.watch(pendingWishCountProvider);
     return DefaultTabController(
-      length: 4,
+      length: 6,
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: AppColors.cream,
           title: Text('👨‍👩‍👧 Góc phụ huynh', style: titleStyle(28)),
           bottom: TabBar(
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
             labelStyle: bodyStyle(20, AppColors.ink, FontWeight.w800),
-            tabs: const [
-              Tab(text: '📊 Báo cáo'),
-              Tab(text: '⚙️ Cài đặt'),
-              Tab(text: '👧 Hồ sơ bé'),
-              Tab(text: '🛡️ An toàn'),
+            tabs: [
+              const Tab(text: '📊 Báo cáo'),
+              Tab(text: pendingWishes > 0 ? '🎮 Trò chơi 💌$pendingWishes' : '🎮 Trò chơi'),
+              const Tab(text: '🎙️ Lời bố mẹ'),
+              const Tab(text: '⚙️ Cài đặt'),
+              const Tab(text: '👧 Hồ sơ bé'),
+              const Tab(text: '🛡️ An toàn'),
             ],
           ),
         ),
-        body: const TabBarView(children: [_ReportTab(), _SettingsTab(), _ProfilesTab(), _SafetyTab()]),
+        body: const TabBarView(children: [
+          _ReportTab(),
+          ParentGamesTab(),
+          ParentVoicesTab(),
+          _SettingsTab(),
+          _ProfilesTab(),
+          _SafetyTab(),
+        ]),
       ),
     );
   }

@@ -7,8 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config.dart';
 import '../models/app_settings.dart';
 import '../models/child_profile.dart';
+import '../models/game_models.dart';
 import 'api_client.dart';
 import 'local_store.dart';
+import 'music_service.dart';
+import 'parent_voice_service.dart';
 import 'secure_store.dart';
 import 'sound_service.dart';
 import 'stt_service.dart';
@@ -20,6 +23,8 @@ final ttsProvider = Provider<TtsService>((ref) => throw UnimplementedError('over
 final soundProvider = Provider<SoundService>((ref) => throw UnimplementedError('override trong main'));
 final secureStoreProvider = Provider<SecureStore>((ref) => SecureStore());
 final sttProvider = Provider<SttService>((ref) => SttService());
+final musicProvider = Provider<MusicService>((ref) => throw UnimplementedError('override trong main'));
+final parentVoiceProvider = Provider<ParentVoiceService>((ref) => throw UnimplementedError('override trong main'));
 
 // ---------------------------------------------------------------- cài đặt
 class SettingsNotifier extends StateNotifier<AppSettings> {
@@ -31,6 +36,8 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     await _ref.read(localStoreProvider).saveSettings(s);
     await _ref.read(ttsProvider).apply(rate: s.ttsRate, pitch: s.ttsPitch, voice: s.voiceName);
     _ref.read(soundProvider).enabled = s.soundEffects;
+    final music = _ref.read(musicProvider);
+    if (music.enabled != s.gameMusic) await music.setEnabled(s.gameMusic);
   }
 }
 
@@ -238,3 +245,27 @@ class StudyTimer extends StateNotifier<StudyState> with WidgetsBindingObserver {
 }
 
 final studyTimerProvider = StateNotifierProvider<StudyTimer, StudyState>((ref) => StudyTimer(ref));
+
+// ---------------------------------------------------------------- điều ước gửi bố mẹ
+class WishesNotifier extends StateNotifier<List<Wish>> {
+  WishesNotifier(this._store) : super(_store.wishes());
+  final LocalStore _store;
+
+  void reload() => state = _store.wishes();
+
+  Future<void> save(Wish w) async {
+    await _store.saveWish(w);
+    reload();
+  }
+
+  Future<void> delete(String id) async {
+    await _store.deleteWish(id);
+    reload();
+  }
+}
+
+final wishesProvider =
+    StateNotifierProvider<WishesNotifier, List<Wish>>((ref) => WishesNotifier(ref.read(localStoreProvider)));
+
+/// Số điều ước bé gửi mà bố mẹ chưa trả lời (hiện dấu 💌 trên nút Góc phụ huynh).
+final pendingWishCountProvider = Provider<int>((ref) => ref.watch(wishesProvider).where((w) => w.pending).length);

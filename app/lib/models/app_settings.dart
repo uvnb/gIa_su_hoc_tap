@@ -12,6 +12,12 @@ class AppSettings {
   final String serverUrl; // "" = dùng API_BASE_URL lúc build
   final String voiceName; // giọng TTS tiếng Việt trên máy ("" = mặc định)
   final String voicePreset; // kiểu giọng: cu_con | co_giao | ban_nho | ong_cu | "" (tự chỉnh)
+  // ---- Góc trò chơi (bố mẹ chỉnh) ----
+  final bool gamesEnabled; // cho phép chơi trò chơi
+  final int gameMinutes; // số phút chơi mỗi ngày
+  final int gameNeedStudyMinutes; // phải học đủ N phút trong ngày mới mở trò chơi (0 = không cần)
+  final int gameDailyGoal; // điểm trò chơi cần đạt để được viết "điều ước" gửi bố mẹ
+  final bool gameMusic; // nhạc nền trong trò chơi
 
   const AppSettings({
     this.ttsRate = 0.42,
@@ -26,6 +32,11 @@ class AppSettings {
     this.serverUrl = '',
     this.voiceName = '',
     this.voicePreset = 'cu_con',
+    this.gamesEnabled = true,
+    this.gameMinutes = 60,
+    this.gameNeedStudyMinutes = 0,
+    this.gameDailyGoal = 300,
+    this.gameMusic = true,
   });
 
   AppSettings copyWith({
@@ -41,6 +52,11 @@ class AppSettings {
     String? serverUrl,
     String? voiceName,
     String? voicePreset,
+    bool? gamesEnabled,
+    int? gameMinutes,
+    int? gameNeedStudyMinutes,
+    int? gameDailyGoal,
+    bool? gameMusic,
   }) =>
       AppSettings(
         ttsRate: ttsRate ?? this.ttsRate,
@@ -55,6 +71,11 @@ class AppSettings {
         serverUrl: serverUrl ?? this.serverUrl,
         voiceName: voiceName ?? this.voiceName,
         voicePreset: voicePreset ?? this.voicePreset,
+        gamesEnabled: gamesEnabled ?? this.gamesEnabled,
+        gameMinutes: gameMinutes ?? this.gameMinutes,
+        gameNeedStudyMinutes: gameNeedStudyMinutes ?? this.gameNeedStudyMinutes,
+        gameDailyGoal: gameDailyGoal ?? this.gameDailyGoal,
+        gameMusic: gameMusic ?? this.gameMusic,
       );
 
   Map<String, dynamic> toMap() => {
@@ -70,6 +91,11 @@ class AppSettings {
         'serverUrl': serverUrl,
         'voiceName': voiceName,
         'voicePreset': voicePreset,
+        'gamesEnabled': gamesEnabled,
+        'gameMinutes': gameMinutes,
+        'gameNeedStudyMinutes': gameNeedStudyMinutes,
+        'gameDailyGoal': gameDailyGoal,
+        'gameMusic': gameMusic,
       };
 
   factory AppSettings.fromMap(Map<dynamic, dynamic>? m) {
@@ -88,6 +114,11 @@ class AppSettings {
       serverUrl: (m['serverUrl'] as String?) ?? d.serverUrl,
       voiceName: (m['voiceName'] as String?) ?? d.voiceName,
       voicePreset: (m['voicePreset'] as String?) ?? '',
+      gamesEnabled: (m['gamesEnabled'] as bool?) ?? d.gamesEnabled,
+      gameMinutes: (m['gameMinutes'] as int?) ?? d.gameMinutes,
+      gameNeedStudyMinutes: (m['gameNeedStudyMinutes'] as int?) ?? d.gameNeedStudyMinutes,
+      gameDailyGoal: (m['gameDailyGoal'] as int?) ?? d.gameDailyGoal,
+      gameMusic: (m['gameMusic'] as bool?) ?? d.gameMusic,
     );
   }
 
