@@ -165,8 +165,14 @@ class BlockBoard {
   (List<int>, List<int>) wouldClear(Shape s, int row, int col) {
     final add = {for (final (r, c) in s.cells) (row + r) * n + (col + c)};
     bool full(int idx) => cells[idx] != null || add.contains(idx);
-    final rows = [for (var r = 0; r < n; r++) if (List.generate(n, (c) => r * n + c).every(full)) r];
-    final cols = [for (var c = 0; c < n; c++) if (List.generate(n, (r) => r * n + c).every(full)) c];
+    final rows = [
+      for (var r = 0; r < n; r++)
+        if (List.generate(n, (c) => r * n + c).every(full)) r
+    ];
+    final cols = [
+      for (var c = 0; c < n; c++)
+        if (List.generate(n, (r) => r * n + c).every(full)) c
+    ];
     return (rows, cols);
   }
 

@@ -92,6 +92,8 @@ class GameTopBar extends ConsumerWidget {
     final time = ref.watch(gameTimerProvider);
     final pts = ref.watch(gamePointsProvider);
     final musicOn = ref.watch(settingsProvider.select((s) => s.gameMusic));
+    final compact = isCompact(context);
+    final fs = compact ? 18.0 : 22.0;
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
       child: Row(
@@ -99,20 +101,20 @@ class GameTopBar extends ConsumerWidget {
           _Pill(
             onTap: onBack,
             color: Colors.white,
-            child: Text('← Góc trò chơi', style: bodyStyle(20, AppColors.ink, FontWeight.w800)),
+            child: Text(compact ? '← Về' : '← Góc trò chơi', style: bodyStyle(fs, AppColors.ink, FontWeight.w800)),
           ),
-          const SizedBox(width: 14),
-          Flexible(child: Text(title, overflow: TextOverflow.ellipsis, style: titleStyle(32))),
+          const SizedBox(width: 12),
+          Flexible(child: Text(title, overflow: TextOverflow.ellipsis, style: titleStyle(compact ? 26 : 32))),
           const Spacer(),
           ...extra,
           _Pill(
             color: time.remainingSeconds <= 300 ? const Color(0xFFFFE0EC) : Colors.white,
-            child: Text('⏳ ${time.remainingLabel}', style: bodyStyle(22, AppColors.ink, FontWeight.w800)),
+            child: Text('⏳ ${time.remainingLabel}', style: bodyStyle(fs, AppColors.ink, FontWeight.w800)),
           ),
           const SizedBox(width: 10),
           _Pill(
             color: AppColors.sun,
-            child: Text('🏆 ${pts.today}', style: bodyStyle(22, AppColors.ink, FontWeight.w800)),
+            child: Text('🏆 ${pts.today}', style: bodyStyle(fs, AppColors.ink, FontWeight.w800)),
           ),
           const SizedBox(width: 10),
           _Pill(
@@ -121,7 +123,7 @@ class GameTopBar extends ConsumerWidget {
               final s = ref.read(settingsProvider);
               ref.read(settingsProvider.notifier).save(s.copyWith(gameMusic: !s.gameMusic));
             },
-            child: Text(musicOn ? '🎵' : '🔇', style: const TextStyle(fontSize: 28)),
+            child: Text(musicOn ? '🎵' : '🔇', style: TextStyle(fontSize: compact ? 24 : 28)),
           ),
         ],
       ),
@@ -144,9 +146,9 @@ class _Pill extends StatelessWidget {
           borderRadius: BorderRadius.circular(30),
           onTap: onTap,
           child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 56, minWidth: 56),
+            constraints: const BoxConstraints(minHeight: 52, minWidth: 52),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               child: Center(widthFactor: 1, child: child),
             ),
           ),

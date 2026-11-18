@@ -25,6 +25,9 @@ class AppSizes {
   static const radius = 24.0;
 }
 
+/// Màn nhỏ (Masstel Tab 10 Edu: 960×600 đơn vị logic) → thu gọn bố cục trò chơi.
+bool isCompact(BuildContext context) => MediaQuery.sizeOf(context).width < 1100;
+
 TextStyle titleStyle([double size = AppSizes.title, Color color = AppColors.ink]) =>
     GoogleFonts.baloo2(fontSize: size, fontWeight: FontWeight.w700, color: color, height: 1.15);
 

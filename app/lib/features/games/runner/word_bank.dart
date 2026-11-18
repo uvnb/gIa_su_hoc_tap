@@ -25,23 +25,104 @@ class WordChallenge {
 /// Từ đọc to theo bậc: 0 một tiếng · 1 hai tiếng · 2 vần khó · 3 câu ngắn.
 const readTiers = <List<String>>[
   [
-    'mèo', 'cá', 'gà', 'bò', 'hoa', 'lá', 'mẹ', 'bố', 'sao', 'mưa', 'nhà', 'xe', 'bé', 'cây', 'quả',
-    'trăng', 'nắng', 'gió', 'vở', 'bút', 'thỏ', 'voi', 'cua', 'nho', 'khế', 'bàn', 'ghế', 'mây', 'biển', 'núi',
+    'mèo',
+    'cá',
+    'gà',
+    'bò',
+    'hoa',
+    'lá',
+    'mẹ',
+    'bố',
+    'sao',
+    'mưa',
+    'nhà',
+    'xe',
+    'bé',
+    'cây',
+    'quả',
+    'trăng',
+    'nắng',
+    'gió',
+    'vở',
+    'bút',
+    'thỏ',
+    'voi',
+    'cua',
+    'nho',
+    'khế',
+    'bàn',
+    'ghế',
+    'mây',
+    'biển',
+    'núi',
   ],
   [
-    'con mèo', 'quả cam', 'cái bàn', 'ông trăng', 'bông hoa', 'cầu vồng', 'trường học', 'cô giáo', 'bạn bè',
-    'cái cặp', 'quyển vở', 'con voi', 'mặt trời', 'đám mây', 'con thỏ', 'chăm chỉ', 'máy bay', 'xe đạp',
-    'búp bê', 'quả bóng', 'cây bút', 'bầu trời', 'hạt mưa', 'gia đình', 'ông bà', 'sân trường', 'con cá',
+    'con mèo',
+    'quả cam',
+    'cái bàn',
+    'ông trăng',
+    'bông hoa',
+    'cầu vồng',
+    'trường học',
+    'cô giáo',
+    'bạn bè',
+    'cái cặp',
+    'quyển vở',
+    'con voi',
+    'mặt trời',
+    'đám mây',
+    'con thỏ',
+    'chăm chỉ',
+    'máy bay',
+    'xe đạp',
+    'búp bê',
+    'quả bóng',
+    'cây bút',
+    'bầu trời',
+    'hạt mưa',
+    'gia đình',
+    'ông bà',
+    'sân trường',
+    'con cá',
   ],
   [
-    'nghỉ ngơi', 'khúc khích', 'rực rỡ', 'lấp lánh', 'xinh xắn', 'nguệch ngoạc', 'quả chuối', 'nghiêng ngả',
-    'luyện tập', 'thướt tha', 'líu lo', 'véo von', 'ríu rít', 'chim sơn ca', 'cánh đồng lúa', 'khăn quàng đỏ',
-    'chiếc thuyền', 'quyển truyện', 'giọt sương', 'ngoan ngoãn', 'thong thả', 'khuôn mặt', 'huơ tay',
+    'nghỉ ngơi',
+    'khúc khích',
+    'rực rỡ',
+    'lấp lánh',
+    'xinh xắn',
+    'nguệch ngoạc',
+    'quả chuối',
+    'nghiêng ngả',
+    'luyện tập',
+    'thướt tha',
+    'líu lo',
+    'véo von',
+    'ríu rít',
+    'chim sơn ca',
+    'cánh đồng lúa',
+    'khăn quàng đỏ',
+    'chiếc thuyền',
+    'quyển truyện',
+    'giọt sương',
+    'ngoan ngoãn',
+    'thong thả',
+    'khuôn mặt',
+    'huơ tay',
   ],
   [
-    'Em yêu trường em', 'Mẹ đi chợ về', 'Bé học bài chăm chỉ', 'Trời hôm nay rất đẹp', 'Cú Tò Mò rất thông minh',
-    'Em giúp mẹ quét nhà', 'Chú mèo nằm sưởi nắng', 'Hoa phượng nở đỏ rực', 'Bầu trời xanh trong vắt',
-    'Em yêu bố mẹ nhiều lắm', 'Chim hót líu lo trên cành', 'Bạn bè cùng nhau học tập',
+    'Em yêu trường em',
+    'Mẹ đi chợ về',
+    'Bé học bài chăm chỉ',
+    'Trời hôm nay rất đẹp',
+    'Cú Tò Mò rất thông minh',
+    'Em giúp mẹ quét nhà',
+    'Chú mèo nằm sưởi nắng',
+    'Hoa phượng nở đỏ rực',
+    'Bầu trời xanh trong vắt',
+    'Em yêu bố mẹ nhiều lắm',
+    'Chim hót líu lo trên cành',
+    'Bạn bè cùng nhau học tập',
   ],
 ];
 
@@ -103,7 +184,8 @@ double proverbChance(int grade, int level) {
 }
 
 /// Tạo thử thách tiếp theo, tránh lặp các mục trong [recent].
-WordChallenge nextChallenge({required int grade, required int level, required Random rnd, Set<String> recent = const {}}) {
+WordChallenge nextChallenge(
+    {required int grade, required int level, required Random rnd, Set<String> recent = const {}}) {
   if (rnd.nextDouble() < proverbChance(grade, level)) {
     final pool = proverbs.where((p) => (grade >= 3 || level >= 4 || p.easy) && !recent.contains(p.text)).toList();
     if (pool.isNotEmpty) {
@@ -126,11 +208,8 @@ WordChallenge nextChallenge({required int grade, required int level, required Ra
 const _from = 'àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ';
 const _to = 'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyyd';
 
-String normalizeVi(String s) => s
-    .toLowerCase()
-    .replaceAll(RegExp(r'[^\p{L}\p{N}\s]', unicode: true), ' ')
-    .replaceAll(RegExp(r'\s+'), ' ')
-    .trim();
+String normalizeVi(String s) =>
+    s.toLowerCase().replaceAll(RegExp(r'[^\p{L}\p{N}\s]', unicode: true), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
 
 String stripDiacritics(String s) {
   final b = StringBuffer();

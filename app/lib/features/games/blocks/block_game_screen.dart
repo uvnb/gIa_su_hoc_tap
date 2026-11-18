@@ -43,8 +43,8 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
   final _boardKey = GlobalKey();
   final _clock = Stopwatch()..start();
   late final AnimationController _fx = AnimationController(vsync: this, duration: const Duration(seconds: 1));
-  late final AnimationController _pulse =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..repeat(reverse: true);
+  late final AnimationController _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))
+    ..repeat(reverse: true);
 
   // kéo thả
   int? _dragIdx;
@@ -222,8 +222,8 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
   Future<void> _afterPlace(PlaceOutcome out, (int, int) at) async {
     final sound = ref.read(soundProvider);
     final now = _now;
-    _floats.add(_FloatText('+${out.placed}', Offset((at.$2 + 0.5) * _cell, (at.$1 + 0.3) * _cell), now,
-        const Color(0xFF7A5CFF), 26));
+    _floats.add(_FloatText(
+        '+${out.placed}', Offset((at.$2 + 0.5) * _cell, (at.$1 + 0.3) * _cell), now, const Color(0xFF7A5CFF), 26));
     if (out.lines > 0) {
       sound.clear();
       for (final (r, c, cell) in out.cleared) {
@@ -262,8 +262,7 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
         _celebrate++;
       });
       ref.read(soundProvider).tada();
-      parentVoiceOrSay(ref, 'praise',
-          'Bạn đạt mục tiêu hôm nay rồi! Ra Góc trò chơi để viết điều ước gửi bố mẹ nhé!');
+      parentVoiceOrSay(ref, 'praise', 'Bạn đạt mục tiêu hôm nay rồi! Ra Góc trò chơi để viết điều ước gửi bố mẹ nhé!');
     }
   }
 
@@ -379,9 +378,11 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
   }
 
   // ------------------------------------------------------------------ giao diện
+  bool _compact = false;
+
   @override
   Widget build(BuildContext context) {
-    ref.watch(gameTimerProvider.select((s) => s.remainingSeconds ~/ 60)); // làm mới khi đổi phút
+    _compact = isCompact(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -404,9 +405,9 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
                   Expanded(
                     child: Row(
                       children: [
-                        SizedBox(width: 270, child: _sidePanel()),
+                        SizedBox(width: _compact ? 200 : 270, child: _sidePanel()),
                         Expanded(child: _boardArea()),
-                        SizedBox(width: 250, child: _trayPanel()),
+                        SizedBox(width: _compact ? 186 : 250, child: _trayPanel()),
                       ],
                     ),
                   ),
@@ -426,17 +427,20 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
     final cfg = _game.cfg;
     final progress = (_game.levelScore / cfg.target).clamp(0.0, 1.0).toDouble();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 6, 6, 14),
+      padding: EdgeInsets.fromLTRB(_compact ? 10 : 14, 4, 4, _compact ? 10 : 14),
       child: Column(
         children: [
-          OwlView(mood: _mood, size: 130),
+          OwlView(mood: _mood, size: _compact ? 92 : 130),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)),
-            child: Text(_owlSay, style: bodyStyle(19, AppColors.ink, FontWeight.w700)),
+            child: Text(_owlSay,
+                maxLines: _compact ? 4 : 5,
+                overflow: TextOverflow.ellipsis,
+                style: bodyStyle(_compact ? 16 : 19, AppColors.ink, FontWeight.w700)),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: _compact ? 8 : 12),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -444,7 +448,7 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Cấp ${_game.level}', style: titleStyle(30, AppColors.sky)),
+                Text('Cấp ${_game.level}', style: titleStyle(_compact ? 24 : 30, AppColors.sky)),
                 const SizedBox(height: 4),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
@@ -456,14 +460,12 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                    _game.levelDone
-                        ? 'Lên cấp!'
-                        : 'Còn ${cfg.target - _game.levelScore} điểm nữa lên cấp',
-                    style: bodyStyle(17)),
-                const SizedBox(height: 6),
-                Text('Điểm ván này: ${_game.runScore}', style: bodyStyle(19, AppColors.ink, FontWeight.w800)),
-                Text('Kỷ lục: ${math.max(_best, _game.runScore)}', style: bodyStyle(17)),
+                Text(_game.levelDone ? 'Lên cấp!' : 'Còn ${cfg.target - _game.levelScore} điểm nữa lên cấp',
+                    style: bodyStyle(_compact ? 14 : 17)),
+                const SizedBox(height: 4),
+                Text('Điểm ván: ${_game.runScore}',
+                    style: bodyStyle(_compact ? 16 : 19, AppColors.ink, FontWeight.w800)),
+                Text('Kỷ lục: ${math.max(_best, _game.runScore)}', style: bodyStyle(_compact ? 14 : 17)),
               ],
             ),
           ),
@@ -475,7 +477,7 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
                 style: OutlinedButton.styleFrom(
                   padding: EdgeInsets.zero,
                   backgroundColor: Colors.white,
-                  textStyle: bodyStyle(18, AppColors.ink, FontWeight.w800),
+                  textStyle: bodyStyle(_compact ? 15 : 18, AppColors.ink, FontWeight.w800),
                 ),
                 child: const Text('❓ Cách chơi'),
               ),
@@ -487,7 +489,7 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
                 style: OutlinedButton.styleFrom(
                   padding: EdgeInsets.zero,
                   backgroundColor: Colors.white,
-                  textStyle: bodyStyle(18, AppColors.ink, FontWeight.w800),
+                  textStyle: bodyStyle(_compact ? 15 : 18, AppColors.ink, FontWeight.w800),
                 ),
                 child: const Text('🔄 Chơi lại'),
               ),
@@ -500,7 +502,7 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
 
   Widget _boardArea() {
     return LayoutBuilder(builder: (context, box) {
-      final size = math.min(box.maxWidth - 20, box.maxHeight - 20).clamp(200.0, 2000.0).toDouble();
+      final size = math.min(box.maxWidth - 12, box.maxHeight - 12).clamp(200.0, 2000.0).toDouble();
       _cell = (size - 2 * _pad) / BlockBoard.n;
       final dragging = _dragIdx == null ? null : _game.tray[_dragIdx!];
       return Center(
@@ -534,13 +536,13 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
 
   Widget _trayPanel() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(6, 6, 14, 14),
+      padding: EdgeInsets.fromLTRB(4, 2, _compact ? 10 : 14, _compact ? 8 : 14),
       child: Column(
         children: [
           for (var i = 0; i < 3; i++)
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
+                padding: EdgeInsets.symmetric(vertical: _compact ? 4 : 6),
                 child: _traySlot(i),
               ),
             ),
@@ -578,7 +580,7 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [BoxShadow(color: AppColors.think.withValues(alpha: 0.5), blurRadius: 10)],
                   ),
-                  child: Text('🔒 ?', style: titleStyle(28, Colors.white)),
+                  child: Text('🔒 ?', style: titleStyle(_compact ? 22 : 28, Colors.white)),
                 ),
               ),
             ],
@@ -601,7 +603,8 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
                 Expanded(child: body),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
-                  child: Text('Chạm để giải đố', style: bodyStyle(16, const Color(0xFF7A5CFF), FontWeight.w800)),
+                  child: Text('Chạm để giải đố',
+                      style: bodyStyle(_compact ? 14 : 16, const Color(0xFF7A5CFF), FontWeight.w800)),
                 ),
               ]),
             )
@@ -649,7 +652,7 @@ class _BlockGameScreenState extends ConsumerState<BlockGameScreen>
           border: Border.all(color: AppColors.sun, width: 6),
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const OwlView(mood: 'encouraging', size: 140),
+          OwlView(mood: 'encouraging', size: _compact ? 100 : 140),
           Text('Hết chỗ đặt khối rồi!', style: titleStyle(36)),
           const SizedBox(height: 8),
           Text('Ván này: ${_game.runScore} điểm · Kỷ lục: $best', style: bodyStyle(24, AppColors.ink, FontWeight.w800)),
@@ -702,7 +705,11 @@ class _MathQuestionDialogState extends ConsumerState<MathQuestionDialog> {
     } else {
       setState(() => _wrong.add(o));
       ref.read(soundProvider).oops();
-      const msgs = ['Chưa đúng rồi, bạn thử lại nhé!', 'Gần rồi! Bạn nghĩ thêm chút nữa nhé!', 'Bình tĩnh, mình tính lại nào!'];
+      const msgs = [
+        'Chưa đúng rồi, bạn thử lại nhé!',
+        'Gần rồi! Bạn nghĩ thêm chút nữa nhé!',
+        'Bình tĩnh, mình tính lại nào!'
+      ];
       ref.read(ttsProvider).say(msgs[(_tries - 1) % msgs.length]);
     }
   }
@@ -958,12 +965,14 @@ class _BoardPainter extends CustomPainter {
       final hl = Paint()..color = AppColors.sun.withValues(alpha: 0.45);
       for (final r in hlRows) {
         canvas.drawRRect(
-            RRect.fromRectAndRadius(Rect.fromLTWH(pad, pad + r * cell, cell * BlockBoard.n, cell), Radius.circular(cell * 0.25)),
+            RRect.fromRectAndRadius(
+                Rect.fromLTWH(pad, pad + r * cell, cell * BlockBoard.n, cell), Radius.circular(cell * 0.25)),
             hl);
       }
       for (final c in hlCols) {
         canvas.drawRRect(
-            RRect.fromRectAndRadius(Rect.fromLTWH(pad + c * cell, pad, cell, cell * BlockBoard.n), Radius.circular(cell * 0.25)),
+            RRect.fromRectAndRadius(
+                Rect.fromLTWH(pad + c * cell, pad, cell, cell * BlockBoard.n), Radius.circular(cell * 0.25)),
             hl);
       }
       for (final (r, c) in piece.shape.cells) {
@@ -1026,6 +1035,5 @@ class _Cloud extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) =>
-      Opacity(opacity: 0.7, child: Text('☁️', style: TextStyle(fontSize: size)));
+  Widget build(BuildContext context) => Opacity(opacity: 0.7, child: Text('☁️', style: TextStyle(fontSize: size)));
 }

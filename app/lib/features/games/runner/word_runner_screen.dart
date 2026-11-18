@@ -376,8 +376,13 @@ class _WordRunnerScreenState extends ConsumerState<WordRunnerScreen>
   }
 
   // ------------------------------------------------------------------ giao diện
+  bool _c = false; // màn nhỏ (tablet 960×600) → chữ & thẻ gọn hơn
+
+  double _f(double big, double small) => _c ? small : big;
+
   @override
   Widget build(BuildContext context) {
+    _c = isCompact(context);
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -389,7 +394,7 @@ class _WordRunnerScreenState extends ConsumerState<WordRunnerScreen>
                 onBack: leaveGame,
                 extra: [
                   Text(List.generate(_hearts, (i) => i < _lives ? '❤️' : '🤍').join(),
-                      style: const TextStyle(fontSize: 30)),
+                      style: TextStyle(fontSize: _f(30, 22))),
                   const SizedBox(width: 12),
                   if (_started)
                     OutlinedButton(
@@ -437,7 +442,7 @@ class _WordRunnerScreenState extends ConsumerState<WordRunnerScreen>
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(24)),
         child: Text('Cấp $_level · 🏃 ${(_dist / 50).round()} m · ⭐ $_score điểm',
-            style: bodyStyle(22, AppColors.ink, FontWeight.w800)),
+            style: bodyStyle(_f(22, 18), AppColors.ink, FontWeight.w800)),
       );
 
   Widget _bannerView(String text) => Container(
@@ -447,20 +452,19 @@ class _WordRunnerScreenState extends ConsumerState<WordRunnerScreen>
           borderRadius: BorderRadius.circular(30),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 10)],
         ),
-        child: Text(text, style: titleStyle(34)),
+        child: Text(text, style: titleStyle(_f(34, 28))),
       );
 
   Widget _challengeCard(_Obstacle o) {
     final ch = o.ch;
     final done = o.state != 0;
     final showOptions = !ch.isRead || !_voice || o.tapHint;
-    final label = ch.isRead
-        ? (_voice ? '🗣️ Đọc to từ này!' : '👂 Nghe Cú đọc, chạm đúng chữ!')
-        : '🧩 Điền từ còn thiếu';
+    final label =
+        ch.isRead ? (_voice ? '🗣️ Đọc to từ này!' : '👂 Nghe Cú đọc, chạm đúng chữ!') : '🧩 Điền từ còn thiếu';
     final border = o.state == 1 ? AppColors.success : (o.state == 2 ? AppColors.think : AppColors.sky);
     return Container(
       width: math.min(820, _size.width - 40),
-      padding: const EdgeInsets.fromLTRB(22, 12, 22, 14),
+      padding: EdgeInsets.fromLTRB(_f(22, 16), _f(12, 6), _f(22, 16), _f(14, 8)),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(30),
@@ -471,12 +475,16 @@ class _WordRunnerScreenState extends ConsumerState<WordRunnerScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           Row(children: [
-            Text(label, style: bodyStyle(22, AppColors.ink, FontWeight.w800)),
+            Text(label, style: bodyStyle(_f(22, 18), AppColors.ink, FontWeight.w800)),
             const Spacer(),
             if (!ch.isRead || !_voice)
-              IconButton(
-                onPressed: () => ref.read(ttsProvider).say(ch.isRead ? ch.prompt : ch.spokenPrompt),
-                icon: const Text('🔊', style: TextStyle(fontSize: 28)),
+              InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () => ref.read(ttsProvider).say(ch.isRead ? ch.prompt : ch.spokenPrompt),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                  child: Text('🔊', style: TextStyle(fontSize: _f(28, 24))),
+                ),
               ),
           ]),
           if (!done)
@@ -496,15 +504,17 @@ class _WordRunnerScreenState extends ConsumerState<WordRunnerScreen>
                 );
               },
             ),
-          const SizedBox(height: 8),
+          SizedBox(height: _f(8, 4)),
           if (ch.isRead && (_voice || done))
-            Text(ch.prompt, textAlign: TextAlign.center, style: titleStyle(ch.prompt.length > 14 ? 46 : 66, AppColors.ink))
+            Text(ch.prompt,
+                textAlign: TextAlign.center,
+                style: titleStyle(ch.prompt.length > 14 ? _f(46, 36) : _f(66, 52), AppColors.ink))
           else if (!ch.isRead)
             _proverbText(ch, done),
           if (showOptions && !done) ...[
             if (ch.isRead && _voice)
-              Text('Cú chưa nghe rõ? Chạm vào chữ đúng nhé!', style: bodyStyle(18, Colors.grey.shade700)),
-            const SizedBox(height: 10),
+              Text('Cú chưa nghe rõ? Chạm vào chữ đúng nhé!', style: bodyStyle(_f(18, 15), Colors.grey.shade700)),
+            SizedBox(height: _f(10, 6)),
             Wrap(
               spacing: 14,
               runSpacing: 10,
@@ -521,7 +531,7 @@ class _WordRunnerScreenState extends ConsumerState<WordRunnerScreen>
                   on ? '👂 Cú đang nghe…${_heard.isEmpty ? '' : '  “$_heard”'}' : '🎤 Chuẩn bị nghe…',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: bodyStyle(19, const Color(0xFF7A5CFF), FontWeight.w700),
+                  style: bodyStyle(_f(19, 16), const Color(0xFF7A5CFF), FontWeight.w700),
                 ),
               ),
             ),
@@ -530,7 +540,7 @@ class _WordRunnerScreenState extends ConsumerState<WordRunnerScreen>
               padding: const EdgeInsets.only(top: 6),
               child: Text(_feedback,
                   textAlign: TextAlign.center,
-                  style: titleStyle(28, o.state == 1 ? AppColors.success : const Color(0xFF7A5CFF))),
+                  style: titleStyle(_f(28, 22), o.state == 1 ? AppColors.success : const Color(0xFF7A5CFF))),
             ),
         ],
       ),
@@ -539,7 +549,7 @@ class _WordRunnerScreenState extends ConsumerState<WordRunnerScreen>
 
   Widget _proverbText(WordChallenge ch, bool done) {
     final parts = ch.prompt.split('___');
-    final style = titleStyle(ch.prompt.length > 40 ? 30 : 38);
+    final style = titleStyle(ch.prompt.length > 40 ? _f(30, 24) : _f(38, 30));
     return Text.rich(
       TextSpan(style: style, children: [
         TextSpan(text: parts.first),
@@ -571,12 +581,12 @@ class _WordRunnerScreenState extends ConsumerState<WordRunnerScreen>
         borderRadius: BorderRadius.circular(24),
         onTap: wrong ? null : () => _tapOption(opt),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 150, minHeight: 72),
+          constraints: BoxConstraints(minWidth: _f(150, 120), minHeight: _f(72, 58)),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 8),
             child: Center(
               widthFactor: 1,
-              child: Text(wrong ? '🤔' : opt, style: titleStyle(34, Colors.white)),
+              child: Text(wrong ? '🤔' : opt, style: titleStyle(_f(34, 28), Colors.white)),
             ),
           ),
         ),
@@ -587,35 +597,37 @@ class _WordRunnerScreenState extends ConsumerState<WordRunnerScreen>
   Widget _startCard() => Container(
         color: Colors.black.withValues(alpha: 0.25),
         alignment: Alignment.center,
-        child: Container(
-          width: 680,
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-            color: AppColors.cream,
-            borderRadius: BorderRadius.circular(36),
-            border: Border.all(color: AppColors.sky, width: 6),
-          ),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const OwlView(mood: 'celebrating', size: 130),
-            Text('Cú Từ Ngữ', style: titleStyle(40)),
-            const SizedBox(height: 8),
-            for (final line in const [
-              '🏃 Cú chạy qua khu rừng.',
-              '🗣️ Gặp chướng ngại vật: ĐỌC TO từ trên màn hình.',
-              '🧩 Có câu thành ngữ thiếu từ: nói hoặc chạm từ đúng.',
-              '🦘 Đúng thì Cú nhảy qua và nhặt ⭐. Trượt thì mất ❤️.',
-            ])
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 3),
-                child: Text(line, style: bodyStyle(21)),
-              ),
-            const SizedBox(height: 18),
-            ElevatedButton(
-              onPressed: _start,
-              style: ElevatedButton.styleFrom(minimumSize: const Size(260, 84), backgroundColor: AppColors.success),
-              child: Text('▶️ Bắt đầu', style: titleStyle(32, Colors.white)),
+        child: SingleChildScrollView(
+          child: Container(
+            width: 680,
+            padding: EdgeInsets.all(_f(28, 18)),
+            decoration: BoxDecoration(
+              color: AppColors.cream,
+              borderRadius: BorderRadius.circular(36),
+              border: Border.all(color: AppColors.sky, width: 6),
             ),
-          ]),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              OwlView(mood: 'celebrating', size: _f(130, 86)),
+              Text('Cú Từ Ngữ', style: titleStyle(_f(40, 32))),
+              const SizedBox(height: 8),
+              for (final line in const [
+                '🏃 Cú chạy qua khu rừng.',
+                '🗣️ Gặp chướng ngại vật: ĐỌC TO từ trên màn hình.',
+                '🧩 Có câu thành ngữ thiếu từ: nói hoặc chạm từ đúng.',
+                '🦘 Đúng thì Cú nhảy qua và nhặt ⭐. Trượt thì mất ❤️.',
+              ])
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Text(line, style: bodyStyle(_f(21, 18))),
+                ),
+              SizedBox(height: _f(18, 10)),
+              ElevatedButton(
+                onPressed: _start,
+                style: ElevatedButton.styleFrom(minimumSize: Size(260, _f(84, 68)), backgroundColor: AppColors.success),
+                child: Text('▶️ Bắt đầu', style: titleStyle(_f(32, 28), Colors.white)),
+              ),
+            ]),
+          ),
         ),
       );
 
@@ -631,8 +643,8 @@ class _WordRunnerScreenState extends ConsumerState<WordRunnerScreen>
             border: Border.all(color: AppColors.sun, width: 6),
           ),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const OwlView(mood: 'sleepy', size: 130),
-            Text('Cú mệt rồi! 😴', style: titleStyle(38)),
+            OwlView(mood: 'sleepy', size: _f(130, 90)),
+            Text('Cú mệt rồi! 😴', style: titleStyle(_f(38, 32))),
             const SizedBox(height: 8),
             Text('Chạy được ${(_dist / 50).round()} m · ⭐ $_score điểm',
                 style: bodyStyle(24, AppColors.ink, FontWeight.w800)),
@@ -687,7 +699,11 @@ class _RunnerPainter extends CustomPainter {
     final face = Paint()..color = const Color(0xFF8A5A00);
     canvas.drawCircle(sun + const Offset(-14, -6), 4.5, face);
     canvas.drawCircle(sun + const Offset(14, -6), 4.5, face);
-    canvas.drawArc(Rect.fromCenter(center: sun + const Offset(0, 6), width: 26, height: 18), 0.2, 2.7, false,
+    canvas.drawArc(
+        Rect.fromCenter(center: sun + const Offset(0, 6), width: 26, height: 18),
+        0.2,
+        2.7,
+        false,
         Paint()
           ..color = const Color(0xFF8A5A00)
           ..style = PaintingStyle.stroke
@@ -767,10 +783,7 @@ class _RunnerPainter extends CustomPainter {
     if (g._over) mood = 'sleepy';
     // bóng
     canvas.drawOval(
-      Rect.fromCenter(
-          center: Offset(g._owlX + 60, ground + 4),
-          width: 90 - (ground - 128 - y) * 0.2,
-          height: 14),
+      Rect.fromCenter(center: Offset(g._owlX + 60, ground + 4), width: 90 - (ground - 128 - y) * 0.2, height: 14),
       Paint()..color = Colors.black.withValues(alpha: 0.12),
     );
     canvas.save();

@@ -100,7 +100,7 @@ class _WishScreenState extends ConsumerState<WishScreen> {
                   child: const Text('← Góc trò chơi'),
                 ),
                 const SizedBox(width: 16),
-                Text('🎁 Điều ước gửi bố mẹ', style: titleStyle(36, const Color(0xFFE0457B))),
+                Text('🎁 Điều ước gửi bố mẹ', style: titleStyle(isCompact(context) ? 30 : 36, const Color(0xFFE0457B))),
               ]),
               const SizedBox(height: 10),
               Expanded(
@@ -115,14 +115,14 @@ class _WishScreenState extends ConsumerState<WishScreen> {
                       )
                     : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         SizedBox(
-                          width: 260,
+                          width: isCompact(context) ? 190 : 260,
                           child: Column(children: [
-                            const OwlView(mood: 'celebrating', size: 200),
+                            OwlView(mood: 'celebrating', size: isCompact(context) ? 130 : 200),
                             Container(
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
                               child: Text('Hôm nay bạn giỏi quá! Bạn muốn bố mẹ thưởng gì?',
-                                  style: bodyStyle(21, AppColors.ink, FontWeight.w700)),
+                                  style: bodyStyle(isCompact(context) ? 18 : 21, AppColors.ink, FontWeight.w700)),
                             ),
                           ]),
                         ),
@@ -149,15 +149,15 @@ class _WishScreenState extends ConsumerState<WishScreen> {
               onTap: () => _pick(s),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                width: 196,
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                width: isCompact(context) ? 160 : 196,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
                 decoration: BoxDecoration(
                   color: _emoji == s.emoji ? AppColors.sun : Colors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: _emoji == s.emoji ? AppColors.orange : const Color(0xFFFFC2D6), width: 3),
                 ),
                 child: Column(children: [
-                  Text(s.emoji, style: const TextStyle(fontSize: 46)),
+                  Text(s.emoji, style: TextStyle(fontSize: isCompact(context) ? 36 : 46)),
                   Text(s.label.replaceFirst('Con muốn ', ''),
                       textAlign: TextAlign.center, maxLines: 2, style: bodyStyle(17, AppColors.ink, FontWeight.w800)),
                 ]),

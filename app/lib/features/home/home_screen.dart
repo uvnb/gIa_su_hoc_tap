@@ -49,8 +49,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final key = 'greet|${child.id}|${LocalStore.dayKey(DateTime.now())}';
     if (store.metaString(key) == null) {
       await store.setMeta(key, '1');
-      final played =
-          await ref.read(parentVoiceProvider).play('greeting', childId: child.id, cooldown: Duration.zero);
+      final played = await ref.read(parentVoiceProvider).play('greeting', childId: child.id, cooldown: Duration.zero);
       if (played) return;
     }
     ref.read(ttsProvider).say('Chào ${child.nickname}! Hôm nay mình học gì nào?');
@@ -121,39 +120,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ],
                 ),
               ),
+              // 4 nút chia đều bề ngang (màn tablet chỉ 960 đơn vị logic)
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  BigButton(
-                    emoji: '📸',
-                    label: 'Chụp bài',
-                    color: AppColors.orange,
-                    onTap: () {
-                      if (_guard()) context.push('/capture', extra: subject);
-                    },
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      child: BigButton(
+                        width: double.infinity,
+                        height: 150,
+                        emoji: '📸',
+                        label: 'Chụp bài',
+                        color: AppColors.orange,
+                        onTap: () {
+                          if (_guard()) context.push('/capture', extra: subject);
+                        },
+                      ),
+                    ),
                   ),
-                  BigButton(
-                    emoji: '🎤',
-                    label: 'Hỏi Cú',
-                    color: AppColors.sky,
-                    onTap: () {
-                      if (_guard()) context.push('/ask', extra: subject);
-                    },
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      child: BigButton(
+                        width: double.infinity,
+                        height: 150,
+                        emoji: '🎤',
+                        label: 'Hỏi Cú',
+                        color: AppColors.sky,
+                        onTap: () {
+                          if (_guard()) context.push('/ask', extra: subject);
+                        },
+                      ),
+                    ),
                   ),
-                  BigButton(
-                    emoji: '🎁',
-                    label: 'Hộp bí ẩn',
-                    color: AppColors.think,
-                    onTap: () {
-                      if (_guard()) context.push('/mystery');
-                    },
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      child: BigButton(
+                        width: double.infinity,
+                        height: 150,
+                        emoji: '🎁',
+                        label: 'Hộp bí ẩn',
+                        color: AppColors.think,
+                        onTap: () {
+                          if (_guard()) context.push('/mystery');
+                        },
+                      ),
+                    ),
                   ),
-                  // Góc trò chơi có giờ chơi riêng do bố mẹ đặt (không tính vào giờ học).
-                  BigButton(
-                    emoji: '🎮',
-                    label: 'Trò chơi',
-                    color: AppColors.success,
-                    onTap: () => context.push('/games'),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 7),
+                      child: BigButton(
+                        width: double.infinity,
+                        height: 150,
+                        emoji: '🎮',
+                        label: 'Trò chơi',
+                        color: AppColors.success,
+                        onTap: () => context.push('/games'),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -206,7 +232,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             // bé gửi điều ước mà bố mẹ chưa xem
             if (ref.watch(pendingWishCountProvider) > 0)
-              const Positioned(right: -2, top: -4, child: IgnorePointer(child: Text('💌', style: TextStyle(fontSize: 26)))),
+              const Positioned(
+                  right: -2, top: -4, child: IgnorePointer(child: Text('💌', style: TextStyle(fontSize: 26)))),
           ]),
         ],
       );
@@ -267,22 +294,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        island('math', 'Toán'),
-        const SizedBox(width: 14),
-        island('vietnamese', 'Tiếng Việt'),
-        const SizedBox(width: 14),
-        island('english', 'Tiếng Anh', soon: true),
-        const SizedBox(width: 30),
-        TextButton(
-          onPressed: () {
-            if (_guard()) context.push('/practice', extra: 'math');
-          },
-          child: Text('🧩 Luyện tập (không cần mạng)', style: bodyStyle(20, AppColors.sky, FontWeight.w800)),
-        ),
-      ],
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          island('math', 'Toán'),
+          const SizedBox(width: 14),
+          island('vietnamese', 'Tiếng Việt'),
+          const SizedBox(width: 14),
+          island('english', 'Tiếng Anh', soon: true),
+          const SizedBox(width: 30),
+          TextButton(
+            onPressed: () {
+              if (_guard()) context.push('/practice', extra: 'math');
+            },
+            child: Text('🧩 Luyện tập (không cần mạng)', style: bodyStyle(20, AppColors.sky, FontWeight.w800)),
+          ),
+        ],
+      ),
     );
   }
 }

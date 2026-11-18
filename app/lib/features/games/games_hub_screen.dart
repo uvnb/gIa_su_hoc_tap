@@ -83,9 +83,11 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
     final settings = ref.watch(settingsProvider);
     final store = ref.read(localStoreProvider);
     if (child == null) {
-      return Scaffold(body: Center(child: ElevatedButton(onPressed: () => context.go('/home'), child: const Text('Về'))));
+      return Scaffold(
+          body: Center(child: ElevatedButton(onPressed: () => context.go('/home'), child: const Text('Về'))));
     }
     final canPlay = time.canPlay;
+    final compact = isCompact(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -97,7 +99,7 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(22, 10, 22, 14),
+            padding: EdgeInsets.fromLTRB(compact ? 14 : 22, 8, compact ? 14 : 22, compact ? 10 : 14),
             child: Column(
               children: [
                 Row(children: [
@@ -106,15 +108,18 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
                     style: OutlinedButton.styleFrom(backgroundColor: Colors.white),
                     child: const Text('← Về nhà'),
                   ),
-                  const SizedBox(width: 16),
-                  Text('🎮 Góc trò chơi', style: titleStyle(38)),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child:
+                        Text('🎮 Góc trò chơi', overflow: TextOverflow.ellipsis, style: titleStyle(compact ? 30 : 38)),
+                  ),
                   const Spacer(),
                   _chip(time.canPlay ? '⏳ Còn ${time.remainingLabel}' : '⏳ ${_short(time)}',
-                      time.canPlay ? Colors.white : const Color(0xFFFFE0EC)),
-                  const SizedBox(width: 10),
-                  _chip('🏆 Hôm nay ${pts.today}', AppColors.sun),
-                  const SizedBox(width: 10),
-                  _chip('💰 Tổng ${pts.total}', Colors.white),
+                      time.canPlay ? Colors.white : const Color(0xFFFFE0EC), compact),
+                  const SizedBox(width: 8),
+                  _chip('🏆 Hôm nay ${pts.today}', AppColors.sun, compact),
+                  const SizedBox(width: 8),
+                  _chip('💰 ${pts.total}', Colors.white, compact),
                 ]),
                 const SizedBox(height: 12),
                 if (!canPlay) _blocked(time),
@@ -128,7 +133,8 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
                           title: 'Xếp Khối Toán',
                           desc: 'Kéo khối, nổ hàng, giải đố toán để mở khối bí ẩn!',
                           colors: const [Color(0xFFFF8FB1), Color(0xFFFFB547)],
-                          stats: 'Cấp ${store.gameLevel(child.id, 'blocks')} · Kỷ lục ${store.gameBest(child.id, 'blocks')}',
+                          stats:
+                              'Cấp ${store.gameLevel(child.id, 'blocks')} · Kỷ lục ${store.gameBest(child.id, 'blocks')}',
                           onPlay: canPlay ? () => context.go('/games/blocks') : null,
                         ),
                       ),
@@ -139,15 +145,16 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
                           title: 'Cú Từ Ngữ',
                           desc: 'Đọc to từ trên màn hình để Cú nhảy qua chướng ngại vật!',
                           colors: const [Color(0xFF5EB8FF), Color(0xFF6BD49A)],
-                          stats: 'Cấp ${store.gameLevel(child.id, 'runner')} · Kỷ lục ${store.gameBest(child.id, 'runner')}',
+                          stats:
+                              'Cấp ${store.gameLevel(child.id, 'runner')} · Kỷ lục ${store.gameBest(child.id, 'runner')}',
                           onPlay: canPlay ? () => context.go('/games/runner') : null,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 14),
-                _wishCard(child.id, pts, settings.gameDailyGoal, store),
+                SizedBox(height: compact ? 10 : 14),
+                _wishCard(child.id, pts, settings.gameDailyGoal, store, compact),
               ],
             ),
           ),
@@ -163,14 +170,14 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
     return 'Hết giờ';
   }
 
-  Widget _chip(String text, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  Widget _chip(String text, Color color, bool compact) => Container(
+        padding: EdgeInsets.symmetric(horizontal: compact ? 12 : 16, vertical: compact ? 6 : 8),
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(30),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6)],
         ),
-        child: Text(text, style: bodyStyle(21, AppColors.ink, FontWeight.w800)),
+        child: Text(text, style: bodyStyle(compact ? 17 : 21, AppColors.ink, FontWeight.w800)),
       );
 
   Widget _blocked(GameTimeState t) => Container(
@@ -180,7 +187,7 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
         child: Row(children: [
           const OwlView(mood: 'sleepy', size: 64),
           const SizedBox(width: 12),
-          Expanded(child: Text(t.blockedReason ?? '', style: titleStyle(26))),
+          Expanded(child: Text(t.blockedReason ?? '', style: titleStyle(22))),
           if (t.studyNeededSeconds > 0)
             ElevatedButton(onPressed: () => context.go('/home'), child: const Text('📚 Đi học với Cú')),
           if (t.timeUp && t.enabled && !t.bedtime)
@@ -194,7 +201,7 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
         ]),
       );
 
-  Widget _wishCard(String childId, GamePoints pts, int goal, LocalStore store) {
+  Widget _wishCard(String childId, GamePoints pts, int goal, LocalStore store, bool compact) {
     final wish = store.wishToday(childId);
     final reached = pts.today >= goal;
     final progress = (pts.today / goal).clamp(0.0, 1.0).toDouble();
@@ -206,28 +213,32 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
         _ => '💌 Đã gửi – chờ bố mẹ xem nhé!',
       };
       right = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-        Text(status, style: titleStyle(26, wish.status == 'approved' ? AppColors.success : AppColors.ink)),
+        Text(status,
+            style: titleStyle(compact ? 22 : 26, wish.status == 'approved' ? AppColors.success : AppColors.ink)),
         Text('${wish.emoji} ${wish.text}', maxLines: 2, overflow: TextOverflow.ellipsis, style: bodyStyle(20)),
         if (wish.reply.isNotEmpty) Text('Bố mẹ nhắn: “${wish.reply}”', style: bodyStyle(18, const Color(0xFFE0457B))),
       ]);
     } else if (reached) {
       right = Row(children: [
-        Expanded(child: Text('Bạn đạt mục tiêu hôm nay rồi! 🎉', style: titleStyle(26, AppColors.success))),
+        Expanded(
+            child: Text('Bạn đạt mục tiêu hôm nay rồi! 🎉', style: titleStyle(compact ? 22 : 26, AppColors.success))),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE0457B), minimumSize: const Size(300, 76)),
+          style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE0457B), minimumSize: Size(compact ? 240 : 300, compact ? 64 : 76)),
           onPressed: () => context.go('/wish'),
           child: const Text('✍️ Viết điều ước gửi bố mẹ'),
         ),
       ]);
     } else {
       right = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-        Text('Còn ${goal - pts.today} điểm nữa để mở 🎁 Phần thưởng đặc biệt', style: titleStyle(24)),
+        Text('Còn ${goal - pts.today} điểm nữa để mở 🎁 Phần thưởng đặc biệt', style: titleStyle(compact ? 21 : 24)),
         const SizedBox(height: 4),
-        Text('Đạt $goal điểm trong ngày → bạn được tự viết điều ước gửi bố mẹ!', style: bodyStyle(18)),
+        Text('Đạt $goal điểm trong ngày → bạn được tự viết điều ước gửi bố mẹ!', style: bodyStyle(compact ? 16 : 18)),
       ]);
     }
+    final ring = compact ? 80.0 : 104.0;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(compact ? 10 : 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28),
@@ -235,12 +246,12 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
       ),
       child: Row(children: [
         SizedBox(
-          width: 120,
-          height: 110,
+          width: ring + 12,
+          height: ring + 6,
           child: Stack(alignment: Alignment.center, children: [
             SizedBox(
-              width: 104,
-              height: 104,
+              width: ring,
+              height: ring,
               child: CircularProgressIndicator(
                 value: wish != null ? 1 : progress,
                 strokeWidth: 12,
@@ -248,7 +259,7 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
                 color: const Color(0xFFE0457B),
               ),
             ),
-            Text(wish != null ? '💌' : '🎁', style: const TextStyle(fontSize: 46)),
+            Text(wish != null ? '💌' : '🎁', style: TextStyle(fontSize: compact ? 36 : 46)),
           ]),
         ),
         const SizedBox(width: 18),
