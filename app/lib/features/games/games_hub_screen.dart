@@ -120,13 +120,13 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
                   const SizedBox(width: 12),
                   Flexible(
                     child:
-                        Text('🎮 Góc trò chơi', overflow: TextOverflow.ellipsis, style: titleStyle(compact ? 30 : 38)),
+                        Text('🎮 Góc trò chơi', overflow: TextOverflow.ellipsis, style: titleStyle(compact ? 27 : 38)),
                   ),
                   const Spacer(),
                   _chip(time.canPlay ? '⏳ Còn ${time.remainingLabel}' : '⏳ ${_short(time)}',
                       time.canPlay ? Colors.white : const Color(0xFFFFE0EC), compact),
                   const SizedBox(width: 8),
-                  _chip('🏆 Hôm nay ${pts.today}', AppColors.sun, compact),
+                  _chip(compact ? '🏆 ${pts.today}' : '🏆 Hôm nay ${pts.today}', AppColors.sun, compact),
                   const SizedBox(width: 8),
                   _chip('💰 ${pts.total}', Colors.white, compact),
                 ]),
@@ -324,7 +324,12 @@ class _GameCard extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(info.title, maxLines: 1, style: titleStyle(40, Colors.white)),
+                        // tên dài (vd "Bóng Bay Phép Tính") tự thu nhỏ cho vừa, không bị cắt
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(info.title, maxLines: 1, style: titleStyle(40, Colors.white)),
+                        ),
                         const SizedBox(height: 4),
                         Text(info.desc, maxLines: 2, style: bodyStyle(21, Colors.white, FontWeight.w700)),
                         const SizedBox(height: 8),
