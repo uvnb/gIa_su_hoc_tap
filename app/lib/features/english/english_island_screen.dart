@@ -190,7 +190,7 @@ class _TopicCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(28),
               gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors),
             ),
-            child: Stack(children: [
+            child: Stack(alignment: Alignment.center, children: [
               // vệt bóng sáng
               Positioned(
                 left: 12,

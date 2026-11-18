@@ -113,7 +113,7 @@ class _EnglishTopicScreenState extends ConsumerState<EnglishTopicScreen> {
                   Text(topic.emoji, style: TextStyle(fontSize: compact ? 30 : 36)),
                   const SizedBox(width: 6),
                   Flexible(
-                    child: Text('${topic.en} · ${topic.vi}',
+                    child: Text(compact ? topic.en : '${topic.en} · ${topic.vi}',
                         overflow: TextOverflow.ellipsis, style: titleStyle(compact ? 24 : 30, const Color(0xFF1E6FB8))),
                   ),
                   const Spacer(),
