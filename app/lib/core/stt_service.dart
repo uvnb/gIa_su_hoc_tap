@@ -8,6 +8,7 @@ class SttService {
   bool _ready = false;
   // Android dùng dạng vi_VN; trình duyệt (bản web chạy thử) cần dạng BCP-47 vi-VN.
   String _localeId = kIsWeb ? 'vi-VN' : 'vi_VN';
+  String _enLocaleId = kIsWeb ? 'en-US' : 'en_US'; // đảo Tiếng Anh
   final level = ValueNotifier<double>(0); // âm lượng – vẽ sóng âm
   final listening = ValueNotifier<bool>(false);
   String? lastError;
@@ -28,6 +29,11 @@ class SttService {
         final locales = await _stt.locales();
         final vi = locales.where((l) => l.localeId.toLowerCase().startsWith('vi'));
         if (vi.isNotEmpty && !kIsWeb) _localeId = vi.first.localeId;
+        final en = locales.where((l) => l.localeId.toLowerCase().replaceAll('-', '_').startsWith('en_us'));
+        final anyEn = locales.where((l) => l.localeId.toLowerCase().startsWith('en'));
+        if (!kIsWeb && (en.isNotEmpty || anyEn.isNotEmpty)) {
+          _enLocaleId = (en.isNotEmpty ? en.first : anyEn.first).localeId;
+        }
       }
     } catch (e) {
       debugPrint('STT init lỗi: $e');
@@ -37,11 +43,12 @@ class SttService {
   }
 
   /// Bắt đầu nghe. onResult(text, isFinal) được gọi liên tục khi có chữ mới.
-  Future<void> listen(void Function(String text, bool isFinal) onResult) async {
+  /// [english] = nghe tiếng Anh (đảo Tiếng Anh).
+  Future<void> listen(void Function(String text, bool isFinal) onResult, {bool english = false}) async {
     if (!await init()) return;
     lastError = null;
     await _stt.listen(
-      localeId: _localeId,
+      localeId: english ? _enLocaleId : _localeId,
       listenFor: const Duration(seconds: 20),
       pauseFor: const Duration(seconds: 4),
       onSoundLevelChange: (l) => level.value = l,

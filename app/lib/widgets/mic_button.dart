@@ -20,6 +20,7 @@ class MicButton extends ConsumerStatefulWidget {
     this.size = 96,
     this.label = 'Giữ để nói',
     this.enabled = true,
+    this.english = false,
   });
 
   final ValueChanged<String> onFinal;
@@ -28,6 +29,7 @@ class MicButton extends ConsumerStatefulWidget {
   final double size;
   final String label;
   final bool enabled;
+  final bool english; // nghe tiếng Anh (đảo Tiếng Anh)
 
   @override
   ConsumerState<MicButton> createState() => _MicButtonState();
@@ -63,7 +65,7 @@ class _MicButtonState extends ConsumerState<MicButton> {
       _text = t;
       widget.onPartial?.call(t);
       if (isFinal && !_held) _finalize();
-    });
+    }, english: widget.english);
     if (!_stt.ready) {
       _held = false;
       widget.onListening?.call(false);
@@ -127,7 +129,9 @@ class _MicButtonState extends ConsumerState<MicButton> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: !widget.enabled ? Colors.grey.shade300 : (_held ? AppColors.success : AppColors.sky),
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6, offset: const Offset(0, 3))],
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 6, offset: const Offset(0, 3))
+                    ],
                   ),
                   child: Text(_held ? '👂' : '🎤', style: TextStyle(fontSize: widget.size * 0.45)),
                 ),

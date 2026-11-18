@@ -21,8 +21,8 @@ class OwlView extends StatefulWidget {
 }
 
 class _OwlViewState extends State<OwlView> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))..repeat();
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400))
+    ..repeat();
 
   @override
   void dispose() {
@@ -151,7 +151,12 @@ class OwlPainter extends CustomPainter {
     final blink = t > 0.93;
     for (final x in [84.0, 116.0]) {
       if (blink) {
-        c.drawLine(Offset(x - 7, 125), Offset(x + 7, 125), Paint()..color = AppColors.ink..strokeWidth = 3);
+        c.drawLine(
+            Offset(x - 7, 125),
+            Offset(x + 7, 125),
+            Paint()
+              ..color = AppColors.ink
+              ..strokeWidth = 3);
       } else {
         c.drawCircle(Offset(x, 125), 8, Paint()..color = AppColors.ink);
         c.drawCircle(Offset(x + 2.5, 122), 2.5, Paint()..color = Colors.white);
@@ -210,8 +215,8 @@ class OwlPainter extends CustomPainter {
   }
 
   void _body(Canvas c) {
-    c.drawOval(Rect.fromCenter(center: const Offset(100, 130), width: 140, height: 156),
-        Paint()..color = AppColors.owlBody);
+    c.drawOval(
+        Rect.fromCenter(center: const Offset(100, 130), width: 140, height: 156), Paint()..color = AppColors.owlBody);
     // tai lông
     final tuft = mood == 'listening' ? 18.0 : 30.0;
     final ear = Paint()..color = AppColors.owlBody;
@@ -230,8 +235,8 @@ class OwlPainter extends CustomPainter {
           ..close(),
         ear);
     // bụng
-    c.drawOval(Rect.fromCenter(center: const Offset(100, 158), width: 92, height: 92),
-        Paint()..color = AppColors.owlBelly);
+    c.drawOval(
+        Rect.fromCenter(center: const Offset(100, 158), width: 92, height: 92), Paint()..color = AppColors.owlBelly);
     final v = Paint()
       ..color = AppColors.owlBody.withValues(alpha: 0.45)
       ..style = PaintingStyle.stroke
@@ -268,8 +273,8 @@ class OwlPainter extends CustomPainter {
       }
       if (mood == 'encouraging' || mood == 'celebrating') {
         c.drawCircle(center, 22, Paint()..color = Colors.white);
-        c.drawArc(Rect.fromCenter(center: center.translate(0, 4), width: 26, height: 22), math.pi + 0.25,
-            math.pi - 0.5, false, line);
+        c.drawArc(Rect.fromCenter(center: center.translate(0, 4), width: 26, height: 22), math.pi + 0.25, math.pi - 0.5,
+            false, line);
         continue;
       }
       if (blink) {
@@ -425,6 +430,5 @@ class OwlPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(OwlPainter old) =>
-      old.t != t || old.mood != mood || old.stage != stage || old.waving != waving;
+  bool shouldRepaint(OwlPainter old) => old.t != t || old.mood != mood || old.stage != stage || old.waving != waving;
 }

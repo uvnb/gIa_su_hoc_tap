@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -5,7 +7,8 @@ import '../core/providers.dart';
 import '../theme/app_theme.dart';
 
 /// Nút lớn cho trẻ: biểu tượng + chữ, chạm có tiếng "pop" (mục 6.5: biểu tượng luôn kèm chữ).
-class BigButton extends ConsumerWidget {
+/// Sinh động: nền chuyển sắc có vệt bóng, emoji nhún nhẹ, bấm thì lún xuống rồi nảy lên.
+class BigButton extends ConsumerStatefulWidget {
   const BigButton({
     super.key,
     required this.emoji,
@@ -26,36 +29,120 @@ class BigButton extends ConsumerWidget {
   final bool speakLabel;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final enabled = onTap != null;
+  ConsumerState<BigButton> createState() => _BigButtonState();
+}
+
+class _BigButtonState extends ConsumerState<BigButton> with SingleTickerProviderStateMixin {
+  late final AnimationController _bob = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200))
+    ..repeat();
+  bool _down = false;
+
+  @override
+  void dispose() {
+    _bob.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onTap != null;
+    final c = enabled ? widget.color : Colors.grey.shade300;
+    final phase = (widget.label.hashCode % 100) / 100;
     return Semantics(
       button: true,
-      label: label,
-      child: Material(
-        color: enabled ? color : Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(32),
-        elevation: enabled ? 4 : 0,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(32),
-          onTap: enabled
-              ? () {
-                  ref.read(soundProvider).pop();
-                  onTap!();
-                }
-              : null,
-          onLongPress: speakLabel ? () => ref.read(ttsProvider).say(label) : null,
-          child: SizedBox(
-            width: width,
-            height: height,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(emoji, style: TextStyle(fontSize: height * 0.36)),
-                const SizedBox(height: 6),
-                Text(label,
-                    textAlign: TextAlign.center,
-                    style: titleStyle(26, enabled ? Colors.white : Colors.grey.shade600)),
+      label: widget.label,
+      child: Listener(
+        onPointerDown: enabled ? (_) => setState(() => _down = true) : null,
+        onPointerUp: (_) => setState(() => _down = false),
+        onPointerCancel: (_) => setState(() => _down = false),
+        child: AnimatedScale(
+          scale: _down ? 0.93 : 1,
+          duration: Duration(milliseconds: _down ? 90 : 300),
+          curve: _down ? Curves.easeOut : Curves.elasticOut,
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(32),
+              boxShadow: [
+                if (enabled)
+                  BoxShadow(
+                    color: Color.lerp(c, Colors.black, 0.35)!.withValues(alpha: 0.35),
+                    blurRadius: _down ? 6 : 14,
+                    offset: Offset(0, _down ? 3 : 8),
+                  ),
               ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(32),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(32),
+                onTap: enabled
+                    ? () {
+                        ref.read(soundProvider).pop();
+                        widget.onTap!();
+                      }
+                    : null,
+                onLongPress: widget.speakLabel ? () => ref.read(ttsProvider).say(widget.label) : null,
+                child: Ink(
+                  width: widget.width,
+                  height: widget.height,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(32),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color.lerp(c, Colors.white, 0.28)!, c, Color.lerp(c, Colors.black, 0.08)!],
+                      stops: const [0, 0.55, 1],
+                    ),
+                  ),
+                  child: Stack(children: [
+                    // vệt bóng sáng như kẹo
+                    Positioned(
+                      left: 18,
+                      top: 10,
+                      right: 60,
+                      child: Container(
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: enabled ? 0.35 : 0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          AnimatedBuilder(
+                            animation: _bob,
+                            builder: (_, child) {
+                              final v = math.sin((_bob.value + phase) * 2 * math.pi);
+                              return Transform.translate(
+                                offset: Offset(0, enabled ? v * 4 : 0),
+                                child: Transform.rotate(angle: enabled ? v * 0.06 : 0, child: child),
+                              );
+                            },
+                            child: Text(widget.emoji, style: TextStyle(fontSize: widget.height * 0.36)),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(widget.label,
+                              textAlign: TextAlign.center,
+                              style: titleStyle(26, enabled ? Colors.white : Colors.grey.shade600).copyWith(
+                                shadows: enabled
+                                    ? [
+                                        Shadow(
+                                            color: Colors.black.withValues(alpha: 0.18),
+                                            offset: const Offset(0, 2),
+                                            blurRadius: 3)
+                                      ]
+                                    : null,
+                              )),
+                        ],
+                      ),
+                    ),
+                  ]),
+                ),
+              ),
             ),
           ),
         ),
@@ -131,7 +218,7 @@ class SpeakButton extends ConsumerWidget {
   }
 }
 
-/// Huy hiệu sao ⭐ N
+/// Huy hiệu sao ⭐ N – số sao "chạy" lên và huy hiệu nảy nhẹ khi được thêm sao.
 class StarBadge extends StatelessWidget {
   const StarBadge({super.key, required this.stars, this.big = false});
   final int stars;
@@ -139,10 +226,26 @@ class StarBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: big ? 18 : 14, vertical: big ? 8 : 6),
-      decoration: BoxDecoration(color: AppColors.sun, borderRadius: BorderRadius.circular(30)),
-      child: Text('⭐ $stars', style: titleStyle(big ? 30 : 24)),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: stars.toDouble()),
+      duration: const Duration(milliseconds: 900),
+      curve: Curves.easeOutCubic,
+      builder: (_, v, __) {
+        final growing = (stars - v).abs() > 0.05;
+        return AnimatedScale(
+          scale: growing ? 1.12 : 1,
+          duration: const Duration(milliseconds: 250),
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: big ? 18 : 14, vertical: big ? 8 : 6),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xFFFFE27A), AppColors.sun]),
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [BoxShadow(color: AppColors.sun.withValues(alpha: 0.5), blurRadius: growing ? 14 : 6)],
+            ),
+            child: Text('⭐ ${v.round()}', style: titleStyle(big ? 30 : 24)),
+          ),
+        );
+      },
     );
   }
 }
@@ -223,7 +326,16 @@ class OwlSpeech extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(child: Text(text, style: titleStyle(30))),
+          Flexible(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              transitionBuilder: (c, a) => ScaleTransition(
+                scale: CurvedAnimation(parent: a, curve: Curves.elasticOut),
+                child: FadeTransition(opacity: a, child: c),
+              ),
+              child: Text(text, key: ValueKey(text), style: titleStyle(30)),
+            ),
+          ),
           SpeakButton(text: text),
         ],
       ),

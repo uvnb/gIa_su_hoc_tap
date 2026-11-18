@@ -8,6 +8,7 @@ import '../../core/providers.dart';
 import '../../models/game_models.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/owl_view.dart';
+import '../../widgets/sky_background.dart';
 
 /// 🎮 Góc trò chơi: chọn trò, xem giờ chơi còn lại, điểm hôm nay và "điều ước" gửi bố mẹ.
 class GamesHubScreen extends ConsumerStatefulWidget {
@@ -98,14 +99,8 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
     }
 
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFFFF1F7), Color(0xFFE6F4FF), Color(0xFFFFF8E1)],
-          ),
-        ),
+      body: SkyBackground(
+        theme: SkyTheme.candy,
         child: SafeArea(
           child: Padding(
             padding: EdgeInsets.fromLTRB(compact ? 14 : 22, 8, compact ? 14 : 22, compact ? 10 : 14),
@@ -137,17 +132,17 @@ class _GamesHubScreenState extends ConsumerState<GamesHubScreen> {
                   child: Column(children: [
                     Expanded(
                       child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                        Expanded(child: card('blocks')),
+                        Expanded(child: PopIn(child: card('blocks'))),
                         SizedBox(width: compact ? 12 : 18),
-                        Expanded(child: card('runner')),
+                        Expanded(child: PopIn(delay: 90, child: card('runner'))),
                       ]),
                     ),
                     SizedBox(height: compact ? 10 : 14),
                     Expanded(
                       child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                        Expanded(child: card('balloon')),
+                        Expanded(child: PopIn(delay: 180, child: card('balloon'))),
                         SizedBox(width: compact ? 12 : 18),
-                        Expanded(child: card('memory')),
+                        Expanded(child: PopIn(delay: 270, child: card('memory'))),
                       ]),
                     ),
                   ]),
@@ -297,62 +292,69 @@ class _GameCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final enabled = onPlay != null;
     final colors = enabled ? info.colors : [Colors.grey.shade300, Colors.grey.shade400];
-    return Material(
-      borderRadius: BorderRadius.circular(30),
-      elevation: enabled ? 5 : 0,
-      color: Colors.transparent,
-      child: InkWell(
+    return PressBounce(
+      enabled: enabled,
+      child: Material(
         borderRadius: BorderRadius.circular(30),
-        onTap: onPlay,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: FittedBox(
-              fit: BoxFit.contain,
-              child: SizedBox(
-                width: 540,
-                height: 200,
-                child: Row(children: [
-                  Text(info.emoji, style: const TextStyle(fontSize: 96)),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // tên dài (vd "Bóng Bay Phép Tính") tự thu nhỏ cho vừa, không bị cắt
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(info.title, maxLines: 1, style: titleStyle(40, Colors.white)),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(info.desc, maxLines: 2, style: bodyStyle(21, Colors.white, FontWeight.w700)),
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(stats, style: bodyStyle(19, Colors.white, FontWeight.w800)),
-                        ),
-                      ],
+        elevation: enabled ? 5 : 0,
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(30),
+          onTap: onPlay,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(30),
+              gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: 540,
+                  height: 200,
+                  child: Row(children: [
+                    Bobbing(
+                      phase: info.id.length * 0.13,
+                      amplitude: enabled ? 5 : 0,
+                      child: Text(info.emoji, style: const TextStyle(fontSize: 96)),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Container(
-                    width: 92,
-                    height: 92,
-                    alignment: Alignment.center,
-                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                    child: Text(enabled ? '▶️' : '🔒', style: const TextStyle(fontSize: 44)),
-                  ),
-                ]),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // tên dài (vd "Bóng Bay Phép Tính") tự thu nhỏ cho vừa, không bị cắt
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(info.title, maxLines: 1, style: titleStyle(40, Colors.white)),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(info.desc, maxLines: 2, style: bodyStyle(21, Colors.white, FontWeight.w700)),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(stats, style: bodyStyle(19, Colors.white, FontWeight.w800)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      width: 92,
+                      height: 92,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                      child: Text(enabled ? '▶️' : '🔒', style: const TextStyle(fontSize: 44)),
+                    ),
+                  ]),
+                ),
               ),
             ),
           ),

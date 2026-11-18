@@ -9,6 +9,8 @@ import 'features/break_time/break_time_screen.dart';
 import 'features/break_time/sleep_screen.dart';
 import 'features/capture/capture_screen.dart';
 import 'features/capture/crop_screen.dart';
+import 'features/english/english_island_screen.dart';
+import 'features/english/english_topic_screen.dart';
 import 'features/games/balloon/balloon_game_screen.dart';
 import 'features/games/memory/memory_game_screen.dart';
 import 'features/games/blocks/block_game_screen.dart';
@@ -49,6 +51,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/mystery', builder: (_, __) => const MysteryBoxScreen()),
       GoRoute(path: '/practice', builder: (_, s) => OfflinePracticeScreen(subject: (s.extra as String?) ?? 'math')),
       GoRoute(path: '/break', builder: (_, __) => const BreakTimeScreen()),
+      GoRoute(path: '/english', builder: (_, __) => const EnglishIslandScreen()),
+      GoRoute(
+        path: '/english/topic',
+        builder: (_, s) => EnglishTopicScreen(topicId: (s.extra as String?) ?? 'animals'),
+      ),
       GoRoute(path: '/games', builder: (_, __) => const GamesHubScreen()),
       GoRoute(path: '/games/blocks', builder: (_, __) => const BlockGameScreen()),
       GoRoute(path: '/games/runner', builder: (_, __) => const WordRunnerScreen()),

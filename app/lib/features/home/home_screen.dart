@@ -8,6 +8,7 @@ import '../../models/child_profile.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/owl_view.dart';
+import '../../widgets/sky_background.dart';
 import '../../widgets/web_help.dart';
 
 /// Môn đang chọn (đảo trên màn chính).
@@ -85,109 +86,115 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
-          child: Column(
-            children: [
-              _topBar(child, profiles),
-              Expanded(
-                child: Row(
-                  children: [
-                    // FittedBox: màn thấp (trình duyệt có thanh địa chỉ) thì thu nhỏ, không đè lên các nút lớn.
-                    Expanded(
-                      flex: 5,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              OwlView(mood: _waving ? 'celebrating' : 'idle', size: 230, waving: _waving),
-                              const SizedBox(height: 8),
-                              const OwlSpeech(text: 'Hôm nay mình học gì nào?', maxWidth: 460),
-                            ],
+      body: SkyBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 12, 24, 12),
+            child: Column(
+              children: [
+                _topBar(child, profiles),
+                Expanded(
+                  child: Row(
+                    children: [
+                      // FittedBox: màn thấp (trình duyệt có thanh địa chỉ) thì thu nhỏ, không đè lên các nút lớn.
+                      Expanded(
+                        flex: 5,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Bobbing(
+                                  amplitude: 7,
+                                  period: 2600,
+                                  child: OwlView(mood: _waving ? 'celebrating' : 'idle', size: 230, waving: _waving),
+                                ),
+                                const SizedBox(height: 8),
+                                const OwlSpeech(text: 'Hôm nay mình học gì nào?', maxWidth: 460),
+                              ],
+                            ),
                           ),
+                        ),
+                      ),
+                      Expanded(
+                        flex: 4,
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: FittedBox(fit: BoxFit.scaleDown, child: _growthCard(child)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // 4 nút chia đều bề ngang (màn tablet chỉ 960 đơn vị logic)
+                Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 7),
+                        child: BigButton(
+                          width: double.infinity,
+                          height: 150,
+                          emoji: '📸',
+                          label: 'Chụp bài',
+                          color: AppColors.orange,
+                          onTap: () {
+                            if (_guard()) context.push('/capture', extra: subject);
+                          },
                         ),
                       ),
                     ),
                     Expanded(
-                      flex: 4,
                       child: Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: FittedBox(fit: BoxFit.scaleDown, child: _growthCard(child)),
+                        padding: const EdgeInsets.symmetric(horizontal: 7),
+                        child: BigButton(
+                          width: double.infinity,
+                          height: 150,
+                          emoji: '🎤',
+                          label: 'Hỏi Cú',
+                          color: AppColors.sky,
+                          onTap: () {
+                            if (_guard()) context.push('/ask', extra: subject);
+                          },
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 7),
+                        child: BigButton(
+                          width: double.infinity,
+                          height: 150,
+                          emoji: '🎁',
+                          label: 'Hộp bí ẩn',
+                          color: AppColors.think,
+                          onTap: () {
+                            if (_guard()) context.push('/mystery');
+                          },
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 7),
+                        child: BigButton(
+                          width: double.infinity,
+                          height: 150,
+                          emoji: '🎮',
+                          label: 'Trò chơi',
+                          color: AppColors.success,
+                          onTap: () => context.push('/games'),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              // 4 nút chia đều bề ngang (màn tablet chỉ 960 đơn vị logic)
-              Row(
-                children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 7),
-                      child: BigButton(
-                        width: double.infinity,
-                        height: 150,
-                        emoji: '📸',
-                        label: 'Chụp bài',
-                        color: AppColors.orange,
-                        onTap: () {
-                          if (_guard()) context.push('/capture', extra: subject);
-                        },
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 7),
-                      child: BigButton(
-                        width: double.infinity,
-                        height: 150,
-                        emoji: '🎤',
-                        label: 'Hỏi Cú',
-                        color: AppColors.sky,
-                        onTap: () {
-                          if (_guard()) context.push('/ask', extra: subject);
-                        },
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 7),
-                      child: BigButton(
-                        width: double.infinity,
-                        height: 150,
-                        emoji: '🎁',
-                        label: 'Hộp bí ẩn',
-                        color: AppColors.think,
-                        onTap: () {
-                          if (_guard()) context.push('/mystery');
-                        },
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 7),
-                      child: BigButton(
-                        width: double.infinity,
-                        height: 150,
-                        emoji: '🎮',
-                        label: 'Trò chơi',
-                        color: AppColors.success,
-                        onTap: () => context.push('/games'),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              _islands(subject),
-            ],
+                const SizedBox(height: 10),
+                _islands(subject),
+              ],
+            ),
           ),
         ),
       ),
@@ -272,48 +279,120 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _islands(String subject) {
-    Widget island(String key, String label, {bool soon = false}) {
-      final selected = subject == key && !soon;
-      return GestureDetector(
-        onTap: soon
-            ? () => ref.read(ttsProvider).say('Đảo $label sắp mở rồi, bạn chờ nhé!')
-            : () {
-                ref.read(currentSubjectProvider.notifier).state = key;
-                ref.read(soundProvider).pop();
-                ref.read(ttsProvider).say('Đảo $label');
-              },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(
-            color: soon ? Colors.grey.shade200 : (selected ? AppColors.success : Colors.white),
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: selected ? AppColors.success : AppColors.softSky, width: 3),
-          ),
-          child: Text('🏝️ $label${soon ? ' (sắp mở)' : ''}',
-              style: bodyStyle(20, selected ? Colors.white : AppColors.ink, FontWeight.w800)),
-        ),
-      );
+    void open(String key, String label) {
+      ref.read(currentSubjectProvider.notifier).state = key;
+      ref.read(soundProvider).pop();
+      if (key == 'english') {
+        context.push('/english');
+      } else {
+        ref.read(ttsProvider).say('Đảo $label');
+      }
     }
 
+    final practice = subject == 'english'
+        ? ('🇬🇧 Học từ, nghe, nói Tiếng Anh', () => context.push('/english'))
+        : (
+            '🧩 Luyện tập (không cần mạng)',
+            () {
+              if (_guard()) context.push('/practice', extra: 'math');
+            }
+          );
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          island('math', 'Toán'),
-          const SizedBox(width: 14),
-          island('vietnamese', 'Tiếng Việt'),
-          const SizedBox(width: 14),
-          island('english', 'Tiếng Anh', soon: true),
-          const SizedBox(width: 30),
-          TextButton(
-            onPressed: () {
-              if (_guard()) context.push('/practice', extra: 'math');
-            },
-            child: Text('🧩 Luyện tập (không cần mạng)', style: bodyStyle(20, AppColors.sky, FontWeight.w800)),
+          _Island(emoji: '🔢', label: 'Toán', selected: subject == 'math', phase: 0, onTap: () => open('math', 'Toán')),
+          const SizedBox(width: 12),
+          _Island(
+              emoji: '📖',
+              label: 'Tiếng Việt',
+              selected: subject == 'vietnamese',
+              phase: 0.33,
+              onTap: () => open('vietnamese', 'Tiếng Việt')),
+          const SizedBox(width: 12),
+          _Island(
+              emoji: '🔤',
+              label: 'Tiếng Anh',
+              selected: subject == 'english',
+              phase: 0.66,
+              isNew: true,
+              onTap: () => open('english', 'Tiếng Anh')),
+          const SizedBox(width: 24),
+          PressBounce(
+            child: TextButton(
+              onPressed: practice.$2,
+              style: TextButton.styleFrom(backgroundColor: Colors.white.withValues(alpha: 0.75)),
+              child: Text(practice.$1, style: bodyStyle(20, AppColors.sky, FontWeight.w800)),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Hòn đảo môn học: nhún nhẹ trên sóng; đảo đang chọn nổi lên, có viền sáng.
+class _Island extends StatelessWidget {
+  const _Island({
+    required this.emoji,
+    required this.label,
+    required this.selected,
+    required this.phase,
+    required this.onTap,
+    this.isNew = false,
+  });
+  final String emoji, label;
+  final bool selected, isNew;
+  final double phase;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressBounce(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Bobbing(
+          phase: phase,
+          amplitude: selected ? 4 : 2,
+          period: 2400,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutBack,
+            padding: const EdgeInsets.fromLTRB(14, 6, 18, 6),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors:
+                    selected ? const [Color(0xFF8BE3A9), AppColors.success] : const [Colors.white, Color(0xFFEAF6FF)],
+              ),
+              borderRadius: BorderRadius.circular(40),
+              border: Border.all(color: selected ? Colors.white : const Color(0xFFBFE3FF), width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: (selected ? AppColors.success : AppColors.sky).withValues(alpha: selected ? 0.45 : 0.15),
+                  blurRadius: selected ? 14 : 6,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Text('🏝️', style: TextStyle(fontSize: 26)),
+              Text(emoji, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 6),
+              Text(label, style: bodyStyle(20, selected ? Colors.white : AppColors.ink, FontWeight.w800)),
+              if (isNew && !selected) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(color: const Color(0xFFFF8FB1), borderRadius: BorderRadius.circular(10)),
+                  child: Text('MỚI', style: bodyStyle(12, Colors.white, FontWeight.w900)),
+                ),
+              ],
+            ]),
+          ),
+        ),
       ),
     );
   }

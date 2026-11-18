@@ -35,7 +35,8 @@ class ParentVoiceBanner extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(color: const Color(0xFFFF8FB1), width: 3),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 12, offset: const Offset(0, 4)),
+                      BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12), blurRadius: 12, offset: const Offset(0, 4)),
                     ],
                   ),
                   child: Row(
@@ -50,8 +51,7 @@ class ParentVoiceBanner extends ConsumerWidget {
                           children: [
                             Text('Lời nhắn của bố mẹ', style: titleStyle(24, const Color(0xFFE0457B))),
                             if (v != null && v.caption.isNotEmpty)
-                              Text(v.caption,
-                                  maxLines: 2, overflow: TextOverflow.ellipsis, style: bodyStyle(19)),
+                              Text(v.caption, maxLines: 2, overflow: TextOverflow.ellipsis, style: bodyStyle(19)),
                           ],
                         ),
                       ),

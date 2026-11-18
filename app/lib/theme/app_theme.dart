@@ -46,6 +46,10 @@ ThemeData buildTheme() {
       error: AppColors.think,
     ),
     scaffoldBackgroundColor: AppColors.cream,
+    // Chuyển màn mềm mại: mờ dần + phóng nhẹ (thay cho trượt ngang mặc định)
+    pageTransitionsTheme: PageTransitionsTheme(
+      builders: {for (final p in TargetPlatform.values) p: const CuteTransitionsBuilder()},
+    ),
   );
   final text = GoogleFonts.nunitoTextTheme(base.textTheme).apply(
     bodyColor: AppColors.ink,
@@ -88,4 +92,19 @@ ThemeData buildTheme() {
       contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
     ),
   );
+}
+
+/// Hiệu ứng chuyển màn dễ thương: màn mới mờ dần hiện ra và "phồng" nhẹ từ 94% lên 100%.
+class CuteTransitionsBuilder extends PageTransitionsBuilder {
+  const CuteTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(PageRoute<T> route, BuildContext context, Animation<double> animation,
+      Animation<double> secondaryAnimation, Widget child) {
+    final a = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
+    return FadeTransition(
+      opacity: a,
+      child: ScaleTransition(scale: Tween<double>(begin: 0.94, end: 1).animate(a), child: child),
+    );
+  }
 }

@@ -33,7 +33,8 @@ Future<void> showWebPermissionHelp(BuildContext context) {
   Future<void> copy(BuildContext ctx, String text, String what) async {
     await Clipboard.setData(ClipboardData(text: text));
     if (ctx.mounted) {
-      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Đã sao chép $what', style: bodyStyle(18, Colors.white))));
+      ScaffoldMessenger.of(ctx)
+          .showSnackBar(SnackBar(content: Text('Đã sao chép $what', style: bodyStyle(18, Colors.white))));
     }
   }
 
@@ -42,7 +43,8 @@ Future<void> showWebPermissionHelp(BuildContext context) {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(radius: 16, backgroundColor: AppColors.sky, child: Text(n, style: titleStyle(18, Colors.white))),
+            CircleAvatar(
+                radius: 16, backgroundColor: AppColors.sky, child: Text(n, style: titleStyle(18, Colors.white))),
             const SizedBox(width: 12),
             Expanded(child: Text(text, style: bodyStyle(19))),
           ],
@@ -62,9 +64,12 @@ Future<void> showWebPermissionHelp(BuildContext context) {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              step('1', 'Bấm nút "Sao chép đường dẫn cài đặt" bên dưới. Mở tab mới, chạm thanh địa chỉ → giữ ngón tay → Dán → Enter.'),
-              step('2', 'Quay lại tab Cú Tò Mò, bấm "Sao chép địa chỉ app". Sang lại tab cài đặt, ở mục được tô vàng '
-                  '"Insecure origins treated as secure": chạm ô chữ → giữ ngón tay → Dán.'),
+              step('1',
+                  'Bấm nút "Sao chép đường dẫn cài đặt" bên dưới. Mở tab mới, chạm thanh địa chỉ → giữ ngón tay → Dán → Enter.'),
+              step(
+                  '2',
+                  'Quay lại tab Cú Tò Mò, bấm "Sao chép địa chỉ app". Sang lại tab cài đặt, ở mục được tô vàng '
+                      '"Insecure origins treated as secure": chạm ô chữ → giữ ngón tay → Dán.'),
               step('3', 'Đổi "Disabled" thành "Enabled", rồi bấm nút "Relaunch" ở dưới cùng.'),
               const SizedBox(height: 8),
               Text('Địa chỉ app: $appUrl', style: bodyStyle(16, Colors.grey.shade700, FontWeight.w600)),
