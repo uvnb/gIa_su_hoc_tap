@@ -17,6 +17,8 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import logging
+import os
 import secrets
 import time
 from typing import Any
@@ -27,12 +29,23 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 from .config import settings
 
 _client: firestore.Client | None = None
+log = logging.getLogger("cutomo.firestore")
 
 
 def _db() -> firestore.Client:
+    """Trên Google Cloud tự dùng tài khoản dịch vụ của máy chủ; ở nơi khác (Hugging Face…) đọc khóa
+    tài khoản dịch vụ từ biến bí mật FIRESTORE_CREDENTIALS_JSON (nội dung file JSON)."""
     global _client
     if _client is None:
-        _client = firestore.Client(database=settings.firestore_database or "(default)")
+        db_name = settings.firestore_database or "(default)"
+        raw = os.environ.get("FIRESTORE_CREDENTIALS_JSON", "").strip()
+        if raw:
+            from google.oauth2 import service_account
+            info = json.loads(raw)
+            creds = service_account.Credentials.from_service_account_info(info)
+            _client = firestore.Client(project=info.get("project_id"), credentials=creds, database=db_name)
+        else:
+            _client = firestore.Client(database=db_name)
     return _client
 
 
@@ -140,8 +153,13 @@ def load(session_id: str) -> dict[str, Any] | None:
 
 def count_sessions_today(device_id: str) -> int:
     start = time.time() - 24 * 3600
-    return sum(1 for d in _eq("sessions", device_id=device_id).stream()
-               if (d.to_dict() or {}).get("created_at", 0) >= start)
+    try:  # cần chỉ mục ghép (device_id, created_at) – nhanh, ít lượt đọc
+        q = _eq("sessions", device_id=device_id).where(filter=FieldFilter("created_at", ">=", start))
+        return q.count().get()[0][0].value
+    except Exception as e:  # chưa có chỉ mục → lọc trong Python
+        log.info("count_sessions_today dùng cách dự phòng: %s", e)
+        return sum(1 for d in _eq("sessions", device_id=device_id).stream()
+                   if (d.to_dict() or {}).get("created_at", 0) >= start)
 
 
 _LOG_FIELDS = ("session_id", "device_id", "child_id", "subject", "grade", "problem_type", "problem_text",
@@ -150,7 +168,13 @@ _LOG_FIELDS = ("session_id", "device_id", "child_id", "subject", "grade", "probl
 
 def problem_logs(device_id: str, child_id: str, since: float) -> list[dict[str, Any]]:
     rows = []
-    for d in _eq("problem_log", device_id=device_id, child_id=child_id).stream():
+    q = _eq("problem_log", device_id=device_id, child_id=child_id)
+    try:  # cần chỉ mục ghép (device_id, child_id, started_at)
+        docs = list(q.where(filter=FieldFilter("started_at", ">=", since)).stream())
+    except Exception as e:
+        log.info("problem_logs dùng cách dự phòng: %s", e)
+        docs = list(q.stream())
+    for d in docs:
         r = d.to_dict() or {}
         if r.get("started_at", 0) >= since:
             rows.append({k: r.get(k) for k in _LOG_FIELDS})

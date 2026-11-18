@@ -79,3 +79,19 @@ Mọi endpoint (trừ health) cần header `x-app-secret`.
 - Chạy sau HTTPS (Caddy / Nginx / PaaS). Đổi `APP_SHARED_SECRET`.
 - SQLite đủ cho thử nghiệm; khi nhiều người dùng chuyển sang Postgres (chỉ cần viết lại `store.py`).
 - Chọn gói API không dùng dữ liệu để huấn luyện ⚠️ VERIFY điều khoản từng nhà cung cấp.
+
+## ☁️ Chạy trên cloud (không cần bật máy tính) – máy nhà làm dự phòng
+
+Hiện tại: **Vercel** (gói Hobby miễn phí, Singapore) chạy FastAPI + **Google Firestore** (gói miễn phí) lưu dữ liệu.
+Địa chỉ: `https://cu-to-mo-brain.vercel.app` (kiểm tra: `/v1/health` → `"store":"firestore"`).
+
+- App gọi cloud trước; cloud không trả lời (mất mạng) thì tự thử máy nhà qua cáp USB (`run_backend.ps1`).
+- Cập nhật cloud sau khi sửa backend:
+  `python scripts/deploy_vercel.py --code-only --token-file D:/tools/vercel_token.txt --sa-file D:/tools/cu-brain-sa.json`
+  (bỏ `--code-only` nếu đổi khóa Gemini / mã bí mật trong `.env`).
+- Mã bí mật app (`APP_SHARED_SECRET` trong `.env`) = secret `APP_SECRET` của kho GitHub (CI dùng khi build APK)
+  = biến môi trường trên Vercel. Máy nhà nhận cả mã này lẫn mã cũ `cutomo-local`.
+- Firestore: project Google Cloud `cu-to-mo-brain-5089`, tài khoản dịch vụ `cu-brain-hf` (chỉ quyền Datastore User),
+  khóa JSON để ngoài thư mục code (`D:/tools/cu-brain-sa.json`). Dữ liệu cũ tự dọn mỗi giờ (TTL cần billing nên chưa bật).
+- Chuyển dữ liệu máy nhà lên cloud: `scripts/migrate_to_firestore.py`.
+- Có `Dockerfile` sẵn nếu sau này dùng Google Cloud Run (cần thẻ thanh toán).
