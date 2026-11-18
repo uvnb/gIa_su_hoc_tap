@@ -69,9 +69,18 @@ class ParentVoiceService {
     nowPlaying.value = v;
     _music.duck(true);
     try {
-      final done = _player.onPlayerComplete.first;
-      await _player.play(DeviceFileSource(v.path), volume: 1.0);
-      await done.timeout(Duration(milliseconds: max(4000, v.durationMs + 2500)), onTimeout: () {});
+      // Chờ phát xong (hoặc quá thời lượng + 2,5 giây). Dùng Completer<void> vì luồng sự kiện của
+      // audioplayers có kiểu riêng – gọi .timeout trực tiếp trên nó bị lỗi kiểu lúc chạy.
+      final done = Completer<void>();
+      final sub = _player.onPlayerComplete.listen((_) {
+        if (!done.isCompleted) done.complete();
+      });
+      try {
+        await _player.play(DeviceFileSource(v.path), volume: 1.0);
+        await done.future.timeout(Duration(milliseconds: max(4000, v.durationMs + 2500)), onTimeout: () {});
+      } finally {
+        await sub.cancel();
+      }
     } catch (e) {
       debugPrint('Không phát được lời bố mẹ: $e');
     } finally {
