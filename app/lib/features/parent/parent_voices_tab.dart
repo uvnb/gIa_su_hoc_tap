@@ -31,11 +31,11 @@ class _ParentVoicesTabState extends ConsumerState<ParentVoicesTab> {
   void _reload() => setState(() => _list = ref.read(localStoreProvider).voices());
 
   Future<void> _new([String? purpose]) async {
-    final v = await showDialog<ParentVoice>(
-      context: context,
-      barrierDismissible: false,
+    // Mở thành màn hình riêng (không phải hộp thoại) – vừa màn 960×600, không phải cuộn.
+    final v = await Navigator.of(context).push<ParentVoice>(MaterialPageRoute(
+      fullscreenDialog: true,
       builder: (_) => RecordVoiceDialog(initialPurpose: purpose ?? 'praise'),
-    );
+    ));
     if (v == null) return;
     await ref.read(parentVoiceProvider).save(v);
     _reload();
@@ -84,7 +84,7 @@ class _ParentVoicesTabState extends ConsumerState<ParentVoicesTab> {
               ]),
             ),
             const SizedBox(width: 12),
-            ElevatedButton(onPressed: _new, child: const Text('🎙️ Ghi âm lời mới')),
+            ElevatedButton(onPressed: () => _new('praise'), child: const Text('🎙️ Ghi âm lời mới')),
           ]),
         ),
         for (final p in voicePurposes) ...[
@@ -148,7 +148,8 @@ class _ParentVoicesTabState extends ConsumerState<ParentVoicesTab> {
   }
 }
 
-/// Hộp ghi âm: chọn mục đích → chọn bé → chú thích → bấm ghi / dừng → nghe lại → lưu.
+/// Màn ghi âm 2 cột (thấy hết, không cần cuộn): trái = để làm gì, cho bé nào, chú thích;
+/// phải = nút 🎙️ to, đồng hồ, nghe lại, 💾 Lưu.
 class RecordVoiceDialog extends ConsumerStatefulWidget {
   const RecordVoiceDialog({super.key, this.initialPurpose = 'praise'});
   final String initialPurpose;
@@ -244,157 +245,170 @@ class _RecordVoiceDialogState extends ConsumerState<RecordVoiceDialog> {
     if (mounted) Navigator.pop(context);
   }
 
+  Widget _label(String t) => Padding(
+        padding: const EdgeInsets.only(top: 12, bottom: 6),
+        child: Text(t, style: bodyStyle(19, AppColors.ink, FontWeight.w800)),
+      );
+
   @override
   Widget build(BuildContext context) {
     final profiles = ref.watch(profilesProvider).list;
     final p = purposeById(_purpose);
     final has = _path != null && !_recording;
-    return AlertDialog(
+    final canSave = has && _ms >= 300;
+    return Scaffold(
       backgroundColor: AppColors.cream,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      title: Text('🎙️ Ghi âm lời của bố mẹ', style: titleStyle(28)),
-      content: SizedBox(
-        width: 820,
-        child: SingleChildScrollView(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            Text('1. Lời này để làm gì?', style: bodyStyle(20, AppColors.ink, FontWeight.w800)),
-            const SizedBox(height: 6),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              for (final vp in voicePurposes)
-                ChoiceChip(
-                  label: Text('${vp.emoji} ${vp.label}', style: bodyStyle(18)),
-                  selected: vp.id == _purpose,
-                  onSelected: (_) => setState(() {
-                    _purpose = vp.id;
-                    _purposeTouched = true;
-                  }),
-                ),
-            ]),
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text('App sẽ phát: ${p.when}', style: bodyStyle(16, Colors.grey.shade700)),
-            ),
-            const SizedBox(height: 14),
-            Text('2. Dành cho bé nào?', style: bodyStyle(20, AppColors.ink, FontWeight.w800)),
-            const SizedBox(height: 6),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              ChoiceChip(
-                label: Text('👨‍👩‍👧 Tất cả các bé', style: bodyStyle(18)),
-                selected: _childId.isEmpty,
-                onSelected: (_) => setState(() => _childId = ''),
-              ),
-              for (final ChildProfile c in profiles)
-                ChoiceChip(
-                  label: Text('${c.avatar} ${c.nickname}', style: bodyStyle(18)),
-                  selected: _childId == c.id,
-                  onSelected: (_) => setState(() => _childId = c.id),
-                ),
-            ]),
-            const SizedBox(height: 14),
-            Text('3. Chú thích (đoạn ghi âm này nói gì, để làm gì)',
-                style: bodyStyle(20, AppColors.ink, FontWeight.w800)),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _caption,
-              maxLength: 80,
-              style: bodyStyle(19),
-              decoration: InputDecoration(hintText: 'VD: ${p.examples.first}'),
-              onChanged: (t) {
-                if (_purposeTouched) return;
-                final g = guessPurpose(t);
-                if (g != null && g != _purpose) setState(() => _purpose = g);
-              },
-            ),
-            Wrap(spacing: 8, runSpacing: 4, children: [
-              for (final ex in p.examples)
-                ActionChip(
-                  label: Text(ex, style: bodyStyle(15)),
-                  onPressed: () => setState(() => _caption.text = ex),
-                ),
-            ]),
-            const SizedBox(height: 14),
-            Text('4. Ghi âm (tối đa ${VoiceRecorder.maxSeconds} giây)',
-                style: bodyStyle(20, AppColors.ink, FontWeight.w800)),
-            const SizedBox(height: 8),
-            Row(children: [
-              // Bấm 1 lần để bắt đầu, bấm lần nữa để dừng – hoặc giữ nút trong lúc nói rồi thả ra.
-              Listener(
-                onPointerDown: (_) {
-                  _downAt = DateTime.now();
-                  _toggle();
-                },
-                onPointerUp: (_) {
-                  final held = _downAt != null && DateTime.now().difference(_downAt!) > const Duration(seconds: 1);
-                  if (held && _recording) _stop();
-                },
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 110,
-                  height: 110,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _recording ? const Color(0xFFE0457B) : AppColors.sky,
-                    boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8)],
-                  ),
-                  child: Text(_recording ? '⏹️' : '🎙️', style: const TextStyle(fontSize: 48)),
-                ),
-              ),
-              const SizedBox(width: 18),
-              Expanded(
-                child: _recording
-                    ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        ValueListenableBuilder<int>(
-                          valueListenable: _rec.elapsed,
-                          builder: (_, s, __) => Text(
-                              '🔴 Đang ghi… 0:${s.toString().padLeft(2, '0')} / 0:30 – bấm ⏹️ để dừng',
-                              style: titleStyle(22, const Color(0xFFE0457B))),
-                        ),
-                        const SizedBox(height: 8),
-                        ValueListenableBuilder<double>(
-                          valueListenable: _rec.level,
-                          builder: (_, l, __) => ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: LinearProgressIndicator(
-                              value: l,
-                              minHeight: 16,
-                              color: AppColors.success,
-                              backgroundColor: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ])
-                    : has
-                        ? Wrap(spacing: 10, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                            Text('Đã ghi ${(_ms / 1000).toStringAsFixed(1)} giây',
-                                style: titleStyle(22, AppColors.success)),
-                            OutlinedButton(
-                              onPressed: () => ref.read(parentVoiceProvider).playOne(_voice()),
-                              child: const Text('▶️ Nghe lại'),
-                            ),
-                            TextButton(onPressed: _toggle, child: const Text('🔁 Ghi lại')),
-                            Text('→ bấm 💾 Lưu ở dưới', style: bodyStyle(17, AppColors.success)),
-                          ])
-                        : Text('Bấm nút 🎙️ rồi nói, bấm ⏹️ để dừng (hoặc giữ nút trong lúc nói rồi thả ra).',
-                            style: bodyStyle(19)),
-              ),
-            ]),
-            if (_error.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(_error, style: bodyStyle(17, const Color(0xFFE0457B))),
-              ),
-          ]),
-        ),
+      appBar: AppBar(
+        backgroundColor: AppColors.cream,
+        leading: IconButton(onPressed: _cancel, icon: const Icon(Icons.close, size: 32)),
+        title: Text('🎙️ Ghi âm lời của bố mẹ', style: titleStyle(26)),
       ),
-      actions: [
-        TextButton(onPressed: _cancel, child: const Text('Hủy')),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.success),
-          onPressed: has && _ms >= 300 ? () => Navigator.pop(context, _voice()) : null,
-          child: const Text('💾 Lưu'),
-        ),
-      ],
+      body: SafeArea(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          // ---------------- bên trái: thông tin
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 0, 12, 20),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _label('1. Lời này để làm gì?'),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  for (final vp in voicePurposes)
+                    ChoiceChip(
+                      label: Text('${vp.emoji} ${vp.label}', style: bodyStyle(17)),
+                      selected: vp.id == _purpose,
+                      onSelected: (_) => setState(() {
+                        _purpose = vp.id;
+                        _purposeTouched = true;
+                      }),
+                    ),
+                ]),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text('App sẽ phát: ${p.when}', style: bodyStyle(15, Colors.grey.shade700)),
+                ),
+                _label('2. Dành cho bé nào?'),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  ChoiceChip(
+                    label: Text('👨‍👩‍👧 Tất cả các bé', style: bodyStyle(17)),
+                    selected: _childId.isEmpty,
+                    onSelected: (_) => setState(() => _childId = ''),
+                  ),
+                  for (final ChildProfile c in profiles)
+                    ChoiceChip(
+                      label: Text('${c.avatar} ${c.nickname}', style: bodyStyle(17)),
+                      selected: _childId == c.id,
+                      onSelected: (_) => setState(() => _childId = c.id),
+                    ),
+                ]),
+                _label('3. Chú thích (lời này nói gì, để làm gì)'),
+                TextField(
+                  controller: _caption,
+                  maxLength: 80,
+                  style: bodyStyle(18),
+                  decoration: InputDecoration(hintText: 'VD: ${p.examples.first}', counterText: ''),
+                  onChanged: (t) {
+                    if (_purposeTouched) return;
+                    final g = guessPurpose(t);
+                    if (g != null && g != _purpose) setState(() => _purpose = g);
+                  },
+                ),
+                const SizedBox(height: 6),
+                Wrap(spacing: 8, runSpacing: 4, children: [
+                  for (final ex in p.examples)
+                    ActionChip(
+                      label: Text(ex, style: bodyStyle(14)),
+                      onPressed: () => setState(() => _caption.text = ex),
+                    ),
+                ]),
+              ]),
+            ),
+          ),
+          // ---------------- bên phải: ghi âm
+          Container(
+            width: 330,
+            margin: const EdgeInsets.fromLTRB(0, 8, 16, 16),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+            child: SingleChildScrollView(
+              child: Column(children: [
+                Text('4. Ghi âm (tối đa ${VoiceRecorder.maxSeconds} giây)',
+                    style: bodyStyle(18, AppColors.ink, FontWeight.w800)),
+                const SizedBox(height: 10),
+                // Bấm 1 lần để bắt đầu, bấm lần nữa để dừng – hoặc giữ nút trong lúc nói rồi thả ra.
+                Listener(
+                  onPointerDown: (_) {
+                    _downAt = DateTime.now();
+                    _toggle();
+                  },
+                  onPointerUp: (_) {
+                    final held = _downAt != null && DateTime.now().difference(_downAt!) > const Duration(seconds: 1);
+                    if (held && _recording) _stop();
+                  },
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: _rec.level,
+                    builder: (_, l, __) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 120),
+                      width: 150,
+                      height: 150,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _recording ? const Color(0xFFE0457B) : AppColors.sky,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (_recording ? const Color(0xFFE0457B) : Colors.black)
+                                .withValues(alpha: _recording ? 0.25 + 0.4 * l : 0.15),
+                            blurRadius: _recording ? 10 + 30 * l : 8,
+                            spreadRadius: _recording ? 4 + 14 * l : 0,
+                          ),
+                        ],
+                      ),
+                      child: Text(_recording ? '⏹️' : '🎙️', style: const TextStyle(fontSize: 64)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (_recording)
+                  ValueListenableBuilder<int>(
+                    valueListenable: _rec.elapsed,
+                    builder: (_, sec, __) => Text(
+                        '🔴 Đang ghi… 0:${sec.toString().padLeft(2, '0')} / 0:30\nBấm ⏹️ để dừng',
+                        textAlign: TextAlign.center,
+                        style: titleStyle(22, const Color(0xFFE0457B))),
+                  )
+                else if (has) ...[
+                  Text('✅ Đã ghi ${(_ms / 1000).toStringAsFixed(1)} giây', style: titleStyle(22, AppColors.success)),
+                  const SizedBox(height: 8),
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    OutlinedButton(
+                      onPressed: () => ref.read(parentVoiceProvider).playOne(_voice()),
+                      child: const Text('▶️ Nghe lại'),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(onPressed: _toggle, child: const Text('🔁 Ghi lại')),
+                  ]),
+                ] else
+                  Text('Bấm 🎙️ rồi nói,\nbấm ⏹️ để dừng.\n(hoặc giữ nút trong lúc nói)',
+                      textAlign: TextAlign.center, style: bodyStyle(18)),
+                if (_error.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(_error, textAlign: TextAlign.center, style: bodyStyle(16, const Color(0xFFE0457B))),
+                  ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.success, minimumSize: const Size(0, 64)),
+                    onPressed: canSave ? () => Navigator.pop(context, _voice()) : null,
+                    child: const Text('💾 Lưu lời này'),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        ]),
+      ),
     );
   }
 }
