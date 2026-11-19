@@ -18,6 +18,9 @@ class NeuralTts {
   static const credit = 'Giọng đọc: Piper vi_VN vais1000 (MIT) · dữ liệu VAIS-1000 (CC BY 4.0) · sherpa-onnx';
   static const _assetDir = 'assets/tts/vi';
   static const _version = 'vais1000-medium-2';
+
+  /// Đổi giá trị này khi đổi bộ chạy mô hình → máy từng bị tắt giọng tự nhiên sẽ được thử lại.
+  static const _engine = 'sherpa1.12.29-ort1.17.1';
   static const _files = [
     'vi.onnx',
     'tokens.txt',
@@ -50,6 +53,30 @@ class NeuralTts {
     if (kIsWeb) return false;
     try {
       final support = await getApplicationSupportDirectory();
+      // CHỐNG VĂNG APP: nếu lần trước app bị tắt đột ngột lúc đang nạp / thử giọng (máy không chạy
+      // được bộ mô hình), lần này không dùng giọng tự nhiên nữa – Cú dùng giọng dự phòng.
+      final disabled = File('${support.path}/tts_disabled');
+      final probe = File('${support.path}/tts_probe');
+      if (disabled.existsSync() && disabled.readAsStringSync() == _engine) return false;
+      if (probe.existsSync() && probe.readAsStringSync() == _engine) {
+        disabled.writeAsStringSync(_engine);
+        probe.deleteSync();
+        debugPrint('Giọng tự nhiên đã làm app dừng ở lần trước – tắt, dùng giọng dự phòng');
+        return false;
+      }
+      _synthProbe = File('${support.path}/tts_synth_probe');
+      _synthFails = File('${support.path}/tts_synth_fails');
+      if (_synthProbe!.existsSync()) {
+        // app dừng giữa lúc đang tạo giọng: đếm, 2 lần liên tiếp thì tắt hẳn
+        final n = (int.tryParse(_synthFails!.existsSync() ? _synthFails!.readAsStringSync() : '0') ?? 0) + 1;
+        _synthProbe!.deleteSync();
+        if (n >= 2) {
+          disabled.writeAsStringSync(_engine);
+          _synthFails!.deleteSync();
+          return false;
+        }
+        _synthFails!.writeAsStringSync('$n');
+      }
       final dir = Directory('${support.path}/tts_vi');
       final marker = File('${dir.path}/.ok');
       if (!marker.existsSync() || marker.readAsStringSync() != _version) {
@@ -72,7 +99,11 @@ class NeuralTts {
       fromWorker.listen((msg) {
         if (msg is SendPort) {
           _toWorker = msg;
-        } else if (msg == 'ready') {
+        } else if (msg is List && msg.length == 2 && msg[0] == 'ready') {
+          debugPrint('Cú: nạp + thử giọng tự nhiên mất ${msg[1]} ms');
+          try {
+            if (probe.existsSync()) probe.deleteSync();
+          } catch (_) {}
           if (!ready.isCompleted) ready.complete(true);
         } else if (msg is String && msg.startsWith('error')) {
           debugPrint('Giọng tự nhiên lỗi: $msg');
@@ -80,9 +111,11 @@ class NeuralTts {
           if (!ready.isCompleted) ready.complete(false);
         } else if (msg is List && msg.length == 4) {
           _pending.remove(msg[0] as int)?.complete(msg[1] == true);
+          if (_pending.isEmpty) _clearSynthProbe(success: msg[1] == true);
           debugPrint('Cú giọng tự nhiên: tạo ${msg[3]} ms âm thanh mất ${msg[2]} ms');
         }
       });
+      probe.writeAsStringSync(_engine, flush: true);
       await Isolate.spawn(_worker, [fromWorker.sendPort, dir.path]);
       final ok = await ready.future.timeout(const Duration(seconds: 60), onTimeout: () => false);
       if (!ok) _toWorker = null;
@@ -92,6 +125,16 @@ class NeuralTts {
       _toWorker = null;
       return false;
     }
+  }
+
+  File? _synthProbe;
+  File? _synthFails;
+
+  void _clearSynthProbe({required bool success}) {
+    try {
+      if (_synthProbe?.existsSync() ?? false) _synthProbe!.deleteSync();
+      if (success && (_synthFails?.existsSync() ?? false)) _synthFails!.deleteSync();
+    } catch (_) {}
   }
 
   /// Giữ bộ nhớ đệm gọn: quá 400 câu thì xóa bớt những câu cũ nhất.
@@ -123,6 +166,9 @@ class NeuralTts {
     final id = _nextId++;
     final c = Completer<bool>();
     _pending[id] = c;
+    try {
+      _synthProbe?.writeAsStringSync('1');
+    } catch (_) {}
     port.send([id, text, speed, pitch, path]);
     final ok = await c.future.timeout(const Duration(seconds: 40), onTimeout: () {
       _pending.remove(id);
@@ -138,6 +184,7 @@ class NeuralTts {
     toMain.send(inbox.sendPort);
     sherpa.OfflineTts? tts;
     try {
+      final sw = Stopwatch()..start();
       sherpa.initBindings();
       tts = sherpa.OfflineTts(sherpa.OfflineTtsConfig(
         model: sherpa.OfflineTtsModelConfig(
@@ -154,7 +201,10 @@ class NeuralTts {
         ),
         maxNumSenetences: 1,
       ));
-      toMain.send('ready');
+      // Thử tạo một câu ngắn ngay: máy nào không chạy được mô hình sẽ lộ ra ở đây (lúc còn đang nạp),
+      // và lần tạo câu đầu tiên thật sự cũng nhanh hơn.
+      tts.generate(text: 'Xin chào.', sid: 0, speed: 1.0);
+      toMain.send(['ready', sw.elapsedMilliseconds]);
     } catch (e) {
       toMain.send('error $e');
       return;
