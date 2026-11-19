@@ -15,7 +15,9 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -60,6 +62,26 @@ def main() -> None:
 
     stage = Path(tempfile.mkdtemp(prefix="cu-vercel-"))
     shutil.copytree(ROOT / "app", stage / "app", ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    # Giọng Cú tự nhiên (Piper vais1000, 64 MB): lấy từ app Flutter (tải bằng app/tool/fetch_tts_model.py)
+    voice = ROOT.parent / "app" / "assets" / "tts" / "vi"
+    if not (voice / "vi.onnx").exists():
+        subprocess.run([sys.executable, str(ROOT.parent / "app" / "tool" / "fetch_tts_model.py")], check=True)
+    shutil.copytree(voice, stage / "app" / "tts_model")
+    # Vercel bỏ các file .so đi kèm gói sherpa-onnx khi đóng gói → tự mang theo (app/tts.py nạp trước)
+    sherpa_ver = next(l.split("==")[1].strip() for l in (ROOT / "requirements-cloud.txt").read_text(
+        encoding="utf-8").splitlines() if l.startswith("sherpa-onnx=="))
+    wheels = Path(tempfile.mkdtemp(prefix="cu-wheels-"))
+    subprocess.run([sys.executable, "-m", "pip", "download", "-q", "--no-deps", "--only-binary=:all:",
+                    "--platform", "manylinux2014_x86_64", "--python-version", "3.12",
+                    f"sherpa-onnx=={sherpa_ver}", f"sherpa-onnx-core=={sherpa_ver}", "-d", str(wheels)], check=True)
+    (stage / "app" / "tts_lib").mkdir()
+    for whl in wheels.glob("*.whl"):
+        with zipfile.ZipFile(whl) as z:
+            for n in z.namelist():
+                base = n.rsplit("/", 1)[-1]
+                if base.startswith(("libonnxruntime.so", "libasound")):
+                    (stage / "app" / "tts_lib" / base).write_bytes(z.read(n))
+    shutil.rmtree(wheels, ignore_errors=True)
     (stage / ".python-version").write_text("3.12\n", encoding="utf-8")
     reqs = [l for l in (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
             if l.strip() and not l.startswith("#") and not l.startswith("uvicorn")]

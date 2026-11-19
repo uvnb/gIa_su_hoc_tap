@@ -202,6 +202,22 @@ class ApiClient {
   Options _parent(String token) => Options(headers: {'x-parent-token': token});
 
   /// 💛 Góc tâm sự: gửi lời bé + vài câu gần nhất (máy chủ không lưu nội dung).
+  /// Giọng Cú tự nhiên (Piper vais1000) do máy chủ đọc một câu → byte WAV; lỗi/mất mạng → null.
+  /// Không thử lại: app sẽ tự tạo giọng trên máy.
+  Future<Uint8List?> tts(String text, {double speed = 1.0, double pitch = 1.0}) async {
+    try {
+      final r = await _dio.post<List<int>>(
+        '/v1/tts',
+        data: {'text': text, 'speed': speed, 'pitch': pitch},
+        options: Options(responseType: ResponseType.bytes, receiveTimeout: const Duration(seconds: 12)),
+      );
+      final b = r.data;
+      return b == null || b.length < 100 ? null : Uint8List.fromList(b);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<FriendReply> friendChat({
     required String message,
     required List<Map<String, String>> history,

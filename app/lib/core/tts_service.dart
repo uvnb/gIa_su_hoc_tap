@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
@@ -43,6 +44,9 @@ class TtsService with WidgetsBindingObserver {
   int _gen = 0; // tăng mỗi lần nói mới / dừng → câu cũ tự bỏ
   Completer<void>? _playing;
   late final Future<bool> _neuralStart;
+
+  /// Máy chủ đọc giúp từng câu (cùng giọng, nhanh hơn tablet rất nhiều). Gắn trong main.dart.
+  set cloud(Future<Uint8List?> Function(String text, double speed, double pitch)? f) => _neural.cloud = f;
 
   /// Xong khi đã áp giọng đã lưu lần đầu.
   Future<void> get ready => _ready.future;

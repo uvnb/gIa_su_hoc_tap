@@ -41,15 +41,38 @@ class NeuralTts {
   final _pending = <int, Completer<bool>>{};
   int _nextId = 0;
   Future<bool>? _starting;
+  Future<bool>? _localStarting;
   String _cacheDir = '';
 
-  bool get ready => _toWorker != null;
+  /// Xin máy chủ đọc một câu (cùng giọng Piper, máy chủ tạo nhanh gấp ~30 lần tablet) → byte WAV.
+  Future<Uint8List?> Function(String text, double speed, double pitch)? cloud;
+  DateTime _cloudDownUntil = DateTime.fromMillisecondsSinceEpoch(0);
 
-  /// Chép mô hình ra bộ nhớ máy (lần đầu sau khi cài) rồi khởi động isolate.
-  /// Trả false nếu máy không chạy được (khi đó Cú dùng giọng dự phòng).
-  Future<bool> start() => _starting ??= _start();
+  /// Bộ tạo giọng ngay trên máy đã sẵn sàng (dùng khi mất mạng).
+  bool get localReady => _toWorker != null;
 
-  Future<bool> _start() async {
+  /// Chuẩn bị bộ nhớ đệm (nhanh). Bộ tạo giọng trên máy chỉ nạp khi cần (mất mạng), vì trên chip
+  /// Cortex-A53 việc nạp mất ~17 giây và tạo giọng chậm gấp 3 lần thời lượng câu.
+  Future<bool> start() => _starting ??= _prepare();
+
+  Future<bool> _prepare() async {
+    if (kIsWeb) return false;
+    try {
+      final cache = Directory('${(await getTemporaryDirectory()).path}/cu_voice');
+      cache.createSync(recursive: true);
+      _cacheDir = cache.path;
+      _trimCache(cache);
+      return true;
+    } catch (e) {
+      debugPrint('Không chuẩn bị được bộ nhớ đệm giọng: $e');
+      return false;
+    }
+  }
+
+  /// Nạp bộ tạo giọng trên máy (chạy nền, chỉ một lần).
+  Future<bool> startLocal() => _localStarting ??= _startLocal();
+
+  Future<bool> _startLocal() async {
     if (kIsWeb) return false;
     try {
       final support = await getApplicationSupportDirectory();
@@ -89,10 +112,6 @@ class NeuralTts {
         }
         marker.writeAsStringSync(_version);
       }
-      final cache = Directory('${(await getTemporaryDirectory()).path}/cu_voice');
-      cache.createSync(recursive: true);
-      _cacheDir = cache.path;
-      _trimCache(cache);
 
       final fromWorker = ReceivePort();
       final ready = Completer<bool>();
@@ -152,8 +171,7 @@ class NeuralTts {
   /// Tạo (hoặc lấy từ bộ nhớ đệm) file WAV cho một câu. [speed] > 1 nói nhanh hơn,
   /// [pitch] > 1 giọng cao, trong trẻo hơn. Trả null nếu không tạo được.
   Future<String?> synthFile(String text, {double speed = 1.0, double pitch = 1.0}) async {
-    final port = _toWorker;
-    if (port == null || _cacheDir.isEmpty) return null;
+    if (_cacheDir.isEmpty) return null;
     final key = cacheKey('$_version|${speed.toStringAsFixed(2)}|${pitch.toStringAsFixed(2)}|$text');
     final path = '$_cacheDir/$key.wav';
     final f = File(path);
@@ -162,6 +180,32 @@ class NeuralTts {
         f.setLastModifiedSync(DateTime.now());
       } catch (_) {}
       return path;
+    }
+    // 1) máy chủ (nhanh)
+    final c0 = cloud;
+    if (c0 != null && DateTime.now().isAfter(_cloudDownUntil)) {
+      final sw = Stopwatch()..start();
+      Uint8List? bytes;
+      try {
+        bytes = await c0(text, speed, pitch).timeout(const Duration(seconds: 12), onTimeout: () => null);
+      } catch (_) {
+        bytes = null;
+      }
+      if (bytes != null && bytes.length > 44 && String.fromCharCodes(bytes.sublist(0, 4)) == 'RIFF') {
+        final tmp = File('$path.tmp');
+        tmp.writeAsBytesSync(bytes, flush: true);
+        tmp.renameSync(path);
+        debugPrint('Cú giọng tự nhiên (máy chủ): ${((bytes.length - 44) / 44.1).round()} ms âm thanh, chờ ${sw.elapsedMilliseconds} ms');
+        return path;
+      }
+      // không tới được máy chủ: 1 phút tới dùng bộ tạo giọng trên máy, khỏi chờ mạng mỗi câu
+      _cloudDownUntil = DateTime.now().add(const Duration(minutes: 1));
+    }
+    // 2) ngay trên máy (mất mạng): chưa nạp thì nạp nền, câu này tạm dùng giọng dự phòng
+    final port = _toWorker;
+    if (port == null) {
+      unawaited(startLocal());
+      return null;
     }
     final id = _nextId++;
     final c = Completer<bool>();

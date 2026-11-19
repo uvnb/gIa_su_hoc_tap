@@ -19,14 +19,15 @@ from typing import Optional
 
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from . import store
 from .config import TIERS, settings
 from .models import (DeviceRegistration, FriendRequest, FriendResponse, MysteryBox, Owl, ParentAnswer,
                      ParentReport, ProblemBrief, ReportItem,
-                     SelectRequest, SessionRef, StartResponse, TurnRequest, TurnResponse)
+                     SelectRequest, SessionRef, StartResponse, TtsRequest, TurnRequest, TurnResponse)
+from . import tts
 from .pipeline import friend, safety, solver, tutor
 from .providers import request_keys, router
 from .providers.base import ProviderError, ProviderRefusal
@@ -161,7 +162,8 @@ def _activate(sess: dict, problem: dict) -> str:
 def health():
     return {"ok": True, "store": settings.store_backend,
             "providers": router.available(), "default_provider": settings.provider_for("TUTOR"),
-            "configured_providers": [p for p in router.available() if router.configured(p)], "tiers": list(TIERS)}
+            "configured_providers": [p for p in router.available() if router.configured(p)], "tiers": list(TIERS),
+            "tts": tts.status()}
 
 
 def _ai_error_info(e: BaseException) -> tuple[int, str]:
@@ -351,6 +353,19 @@ def challenge(body: SessionRef):
     return StartResponse(session_id=sid, readable=True, problem_display=prob["text"], problems_found=1,
                          problems=[ProblemBrief(id=1, text=prob["text"])], subject=sess["subject"], mode=prob["mode"],
                          owl=Owl(say="Thử thách mới đây! " + out["owl"]["say"], mood="asking"), state="tutoring")
+
+
+@app.post("/v1/tts", dependencies=[Depends(require_app)])
+def tts_say(req: TtsRequest) -> Response:
+    """Giọng Cú tự nhiên (Piper vais1000) cho một câu → WAV. App lưu lại, lần sau phát ngay."""
+    if not tts.available():
+        raise HTTPException(503, "Máy chủ chưa có giọng tự nhiên")
+    try:
+        wav = tts.synth_wav(req.text.strip(), req.speed, req.pitch)
+    except Exception as e:  # noqa: BLE001
+        log.warning("TTS lỗi: %s", e)
+        raise HTTPException(503, "Không tạo được giọng") from e
+    return Response(wav, media_type="audio/wav", headers={"Cache-Control": "private, max-age=604800"})
 
 
 @app.post("/v1/friend/chat", response_model=FriendResponse, dependencies=[Depends(require_app)])

@@ -1,3 +1,5 @@
 # Gói thêm cho bản chạy trên Google Cloud Run (Dockerfile dùng file này).
 -r requirements.txt
 google-cloud-firestore==2.34.1
+# Giọng Cú tự nhiên (Piper vais1000) – xem app/tts.py
+sherpa-onnx==1.12.29

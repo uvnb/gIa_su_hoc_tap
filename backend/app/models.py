@@ -119,6 +119,12 @@ class FriendMessage(BaseModel):
     text: str = Field("", max_length=400)
 
 
+class TtsRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=400)
+    speed: float = Field(1.0, ge=0.6, le=1.6)
+    pitch: float = Field(1.0, ge=0.85, le=1.25)
+
+
 class FriendRequest(BaseModel):
     device_id: str = Field("", max_length=64)
     child_id: str = Field("", max_length=64)

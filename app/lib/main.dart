@@ -53,6 +53,8 @@ class CuToMoApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    // Giọng Cú tự nhiên: xin máy chủ đọc từng câu (luôn dùng địa chỉ máy chủ đang chọn).
+    ref.read(ttsProvider).cloud = (text, speed, pitch) => ref.read(apiProvider).tts(text, speed: speed, pitch: pitch);
     return MaterialApp.router(
       title: 'Cú Tò Mò',
       debugShowCheckedModeBanner: false,
