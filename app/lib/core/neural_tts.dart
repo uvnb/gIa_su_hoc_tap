@@ -20,7 +20,7 @@ class NeuralTts {
   static const _version = 'vais1000-medium-2';
 
   /// Đổi giá trị này khi đổi bộ chạy mô hình → máy từng bị tắt giọng tự nhiên sẽ được thử lại.
-  static const _engine = 'sherpa1.12.29-ort1.17.1';
+  static const _engine = 'sherpa1.12.29-ort1.17.1-t1';
   static const _files = [
     'vi.onnx',
     'tokens.txt',
@@ -196,7 +196,8 @@ class NeuralTts {
             noiseScale: 0.6,
             noiseScaleW: 0.75,
           ),
-          numThreads: Platform.numberOfProcessors >= 4 ? 3 : 2,
+          // 1 luồng: trên chip Cortex-A53 (MT8765) nhóm luồng của ONNX Runtime làm hỏng bộ nhớ → app văng.
+          numThreads: 1,
           debug: false,
         ),
         maxNumSenetences: 1,
