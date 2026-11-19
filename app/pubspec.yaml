@@ -45,3 +45,9 @@ flutter:
     - assets/tts/vi/espeak-ng-data/
     - assets/tts/vi/espeak-ng-data/lang/aav/
     - assets/tts/vi/espeak-ng-data/lang/gmw/
+
+# path_provider_android 2.3.x dùng package:jni – trên máy tính bảng (Android 11) bản build kèm
+# sherpa_onnx bị lỗi "ClassNotFoundException android/content/Context" ngay lúc mở app.
+# Giữ bản 2.2.x (kênh method channel, không cần jni) – đã chạy ổn định.
+dependency_overrides:
+  path_provider_android: 2.2.17

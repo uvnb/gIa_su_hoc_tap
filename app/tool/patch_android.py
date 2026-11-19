@@ -80,6 +80,28 @@ def patch_lint() -> None:
         return
 
 
+def patch_abi() -> None:
+    """Bỏ thư viện x86/x86_64 của plugin (sherpa-onnx ~40 MB) – máy tính bảng/điện thoại đều là ARM."""
+    for name in ("build.gradle.kts", "build.gradle"):
+        f = ANDROID / "app" / name
+        if not f.exists():
+            continue
+        s = f.read_text(encoding="utf-8")
+        if "lib/x86_64/**" in s:
+            return
+        if name.endswith(".kts"):
+            block = ('android {\n    packaging {\n        jniLibs {\n'
+                     '            excludes += setOf("lib/x86/**", "lib/x86_64/**")\n        }\n    }\n')
+        else:
+            block = ("android {\n    packagingOptions {\n        jniLibs {\n"
+                     "            excludes += ['lib/x86/**', 'lib/x86_64/**']\n        }\n    }\n")
+        new = re.sub(r"^android\s*\{\s*\n", block, s, count=1, flags=re.M)
+        if new != s:
+            f.write_text(new, encoding="utf-8")
+            print(f"✔ {f.relative_to(ROOT)}: bỏ thư viện x86 khỏi APK")
+        return
+
+
 def patch_main_manifest() -> None:
     f = ANDROID / "app" / "src" / "main" / "AndroidManifest.xml"
     s = f.read_text(encoding="utf-8")
@@ -129,6 +151,7 @@ if __name__ == "__main__":
         sys.exit(1)
     patch_gradle()
     patch_lint()
+    patch_abi()
     patch_main_manifest()
     patch_debug_manifest()
     if "--allow-http" in sys.argv:
