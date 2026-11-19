@@ -155,10 +155,14 @@ class _ScratchPadScreenState extends State<ScratchPadScreen> {
                         ),
                       ),
                     ),
-                  _tool('🧽', 'Tẩy', _eraser && !_handMode, () => setState(() {
-                        _eraser = true;
-                        _handMode = false;
-                      })),
+                  _tool(
+                      '🧽',
+                      'Tẩy',
+                      _eraser && !_handMode,
+                      () => setState(() {
+                            _eraser = true;
+                            _handMode = false;
+                          })),
                   _tool('✋', 'Kéo giấy', _handMode, () => setState(() => _handMode = !_handMode)),
                   _tool('↩️', 'Lùi lại', false, c.undo),
                   _tool('🗑️', 'Xóa hết', false, () async {
@@ -181,8 +185,8 @@ class _ScratchPadScreenState extends State<ScratchPadScreen> {
                         OutlinedButton(onPressed: () => Navigator.of(context).pop(), child: const Text('← Đóng')),
                         const SizedBox(width: 16),
                         Expanded(
-                          child: Text(widget.problem,
-                              maxLines: 2, overflow: TextOverflow.ellipsis, style: bodyStyle(20)),
+                          child:
+                              Text(widget.problem, maxLines: 2, overflow: TextOverflow.ellipsis, style: bodyStyle(20)),
                         ),
                         const SizedBox(width: 16),
                         ElevatedButton(
@@ -326,7 +330,8 @@ class _ScratchPadScreenState extends State<ScratchPadScreen> {
           const SizedBox(height: 8),
           _arrow('⬇️', () {
             // Ở cuối giấy mà bấm xuống → thêm trang mới để viết tiếp.
-            if (_scroll.hasClients && _scroll.offset >= _scroll.position.maxScrollExtent - 4 &&
+            if (_scroll.hasClients &&
+                _scroll.offset >= _scroll.position.maxScrollExtent - 4 &&
                 c.height < _viewport * _maxPages) {
               setState(() => c.height += _viewport);
               WidgetsBinding.instance.addPostFrameCallback((_) => _scrollBy(_viewport * 0.6, animate: true));
@@ -346,7 +351,8 @@ class _ScratchPadScreenState extends State<ScratchPadScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
           onTap: onTap,
-          child: SizedBox(width: 76, height: 72, child: Center(child: Text(emoji, style: const TextStyle(fontSize: 32)))),
+          child:
+              SizedBox(width: 76, height: 72, child: Center(child: Text(emoji, style: const TextStyle(fontSize: 32)))),
         ),
       );
 

@@ -108,3 +108,32 @@ class ParentReport(BaseModel):
     recent: list[ReportItem] = Field(default_factory=list)
     safety_alerts: int = 0
     by_day: list[dict[str, Any]] = Field(default_factory=list)
+    # 💛 Góc tâm sự – chỉ số lượt & cảnh báo, KHÔNG có nội dung trò chuyện
+    friend_turns: int = 0
+    friend_days: int = 0
+    friend_alerts: list[str] = Field(default_factory=list)  # self_harm | abuse | danger
+
+
+class FriendMessage(BaseModel):
+    who: Literal["child", "owl"] = "child"
+    text: str = Field("", max_length=400)
+
+
+class FriendRequest(BaseModel):
+    device_id: str = Field("", max_length=64)
+    child_id: str = Field("", max_length=64)
+    nickname: str = Field("bạn", max_length=30)
+    grade: int = Field(1, ge=1, le=5)
+    mood: str = Field("", max_length=10)
+    message: str = Field(..., min_length=1, max_length=400)
+    history: list[FriendMessage] = Field(default_factory=list, max_length=12)
+    provider: Optional[str] = None
+    tier: Optional[str] = None
+
+
+class FriendResponse(BaseModel):
+    say: str
+    owl_mood: str = "listening"
+    suggest_breathing: bool = False
+    crisis: str = ""  # self_harm | abuse | "" – app hiện thẻ "nói với người lớn + gọi 111"
+    hotline: str = ""

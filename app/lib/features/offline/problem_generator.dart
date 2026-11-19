@@ -61,9 +61,7 @@ class ProblemGenerator {
       b = _rand(bLo, bHi);
       a = _rand(aLo, aHi);
     }
-    final t = word
-        ? '${_pick(_names)} có $a ${_thing()}, được cho thêm $b. Hỏi có tất cả bao nhiêu?'
-        : '$a + $b = ?';
+    final t = word ? '${_pick(_names)} có $a ${_thing()}, được cho thêm $b. Hỏi có tất cả bao nhiêu?' : '$a + $b = ?';
     return OfflineProblem(t, a, b, '+', a + b, a + b <= 20 ? 'sticks' : 'base10');
   }
 
@@ -72,9 +70,7 @@ class ProblemGenerator {
   OfflineProblem _sub(int aLo, int aHi, bool word) {
     final a = _rand(aLo, aHi);
     final b = _rand(1, a - 1 < 1 ? 1 : a - 1);
-    final t = word
-        ? '${_pick(_names)} có $a ${_thing()}, cho bạn $b. Hỏi còn lại bao nhiêu?'
-        : '$a − $b = ?';
+    final t = word ? '${_pick(_names)} có $a ${_thing()}, cho bạn $b. Hỏi còn lại bao nhiêu?' : '$a − $b = ?';
     return OfflineProblem(t, a, b, '-', a - b, a <= 20 ? 'sticks' : 'base10');
   }
 
@@ -98,8 +94,20 @@ num? parseChildNumber(String input) {
   final m = RegExp(r'-?\d+(?:[.,]\d+)?').allMatches(s).toList();
   if (m.isNotEmpty) return num.tryParse(m.last.group(0)!.replaceAll(',', '.'));
   const units = {
-    'không': 0, 'một': 1, 'mốt': 1, 'hai': 2, 'ba': 3, 'bốn': 4, 'tư': 4, 'năm': 5, 'lăm': 5,
-    'sáu': 6, 'bảy': 7, 'bẩy': 7, 'tám': 8, 'chín': 9,
+    'không': 0,
+    'một': 1,
+    'mốt': 1,
+    'hai': 2,
+    'ba': 3,
+    'bốn': 4,
+    'tư': 4,
+    'năm': 5,
+    'lăm': 5,
+    'sáu': 6,
+    'bảy': 7,
+    'bẩy': 7,
+    'tám': 8,
+    'chín': 9,
   };
   final words = s.split(RegExp(r'[\s,.!?]+')).where((w) => w.isNotEmpty).toList();
   int? total;

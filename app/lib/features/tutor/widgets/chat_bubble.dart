@@ -25,7 +25,9 @@ class ChatBubble extends StatelessWidget {
             bottomLeft: Radius.circular(fromOwl ? 4 : 24),
             bottomRight: Radius.circular(fromOwl ? 24 : 4),
           ),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2))],
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 6, offset: const Offset(0, 2))
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

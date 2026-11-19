@@ -10,6 +10,7 @@ import '../../widgets/common.dart';
 import '../../widgets/owl_view.dart';
 import '../../widgets/sky_background.dart';
 import '../../widgets/web_help.dart';
+import '../vietnam/vietnam_content.dart';
 
 /// Môn đang chọn (đảo trên màn chính).
 final currentSubjectProvider = StateProvider<String>((ref) => 'math');
@@ -113,6 +114,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ),
                                 const SizedBox(height: 8),
                                 const OwlSpeech(text: 'Hôm nay mình học gì nào?', maxWidth: 460),
+                                const SizedBox(height: 8),
+                                _factChip(),
                               ],
                             ),
                           ),
@@ -247,6 +250,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       );
 
+  /// 💡 "Bạn có biết?" – một điều về lịch sử, địa lý, văn hóa Việt Nam, đổi mỗi ngày.
+  Widget _factChip() {
+    final f = factOfTheDay();
+    return PressBounce(
+      child: GestureDetector(
+        onTap: () {
+          ref.read(ttsProvider).say('Bạn có biết? ${f.fact}');
+          context.push('/vietnam', extra: topicOf(f).id);
+        },
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 460),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [Color(0xFFFFF3C4), Color(0xFFFFE0EC)]),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.sun, width: 2),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(f.emoji, style: const TextStyle(fontSize: 26)),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text('💡 Bạn có biết? ${f.fact}',
+                  maxLines: 2, overflow: TextOverflow.ellipsis, style: bodyStyle(17, AppColors.ink, FontWeight.w700)),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
   Widget _growthCard(ChildProfile child) {
     final stage = child.owlStage;
     final next = stage < 3 ? ChildProfile.stageThresholds[stage + 1] : null;
@@ -284,6 +317,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ref.read(soundProvider).pop();
       if (key == 'english') {
         context.push('/english');
+      } else if (key == 'vietnam') {
+        context.push('/vietnam');
+      } else if (key == 'friend') {
+        context.push('/friend');
       } else {
         ref.read(ttsProvider).say('Đảo $label');
       }
@@ -292,7 +329,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final practice = subject == 'english'
         ? ('🇬🇧 Học từ, nghe, nói Tiếng Anh', () => context.push('/english'))
         : (
-            '🧩 Luyện tập (không cần mạng)',
+            '🧩 Luyện tập',
             () {
               if (_guard()) context.push('/practice', extra: 'math');
             }
@@ -316,9 +353,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               label: 'Tiếng Anh',
               selected: subject == 'english',
               phase: 0.66,
-              isNew: true,
               onTap: () => open('english', 'Tiếng Anh')),
-          const SizedBox(width: 24),
+          const SizedBox(width: 12),
+          _Island(
+              emoji: '🇻🇳',
+              label: 'Việt Nam',
+              selected: false,
+              phase: 0.2,
+              isNew: true,
+              onTap: () => open('vietnam', 'Việt Nam')),
+          const SizedBox(width: 12),
+          _Island(
+              emoji: '💛',
+              label: 'Tâm sự',
+              selected: false,
+              phase: 0.5,
+              isNew: true,
+              onTap: () => open('friend', 'Tâm sự')),
+          const SizedBox(width: 18),
           PressBounce(
             child: TextButton(
               onPressed: practice.$2,

@@ -77,9 +77,7 @@ class TurnResult {
         hintLevel: (j['hint_level'] as num?)?.toInt() ?? 0,
         state: j['state'] as String? ?? 'tutoring',
         starsEarned: (j['stars_earned'] as num?)?.toInt() ?? 0,
-        uiActions: ((j['ui_actions'] as List?) ?? [])
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList(),
+        uiActions: ((j['ui_actions'] as List?) ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
         funQuestion: j['fun_question'] as String? ?? '',
       );
 }
@@ -120,6 +118,9 @@ class ParentReport {
   final List<Map<String, dynamic>> parkedItems;
   final List<Map<String, dynamic>> recent;
   final List<Map<String, dynamic>> byDay;
+  final int friendTurns; // 💛 Góc tâm sự: số lượt bé trò chuyện (không có nội dung)
+  final int friendDays;
+  final List<String> friendAlerts; // self_harm | abuse | danger
 
   const ParentReport({
     required this.minutes,
@@ -132,6 +133,9 @@ class ParentReport {
     required this.parkedItems,
     required this.recent,
     required this.byDay,
+    this.friendTurns = 0,
+    this.friendDays = 0,
+    this.friendAlerts = const [],
   });
 
   static List<Map<String, dynamic>> _list(dynamic v) =>
@@ -148,5 +152,26 @@ class ParentReport {
         parkedItems: _list(j['parked_items']),
         recent: _list(j['recent']),
         byDay: _list(j['by_day']),
+        friendTurns: (j['friend_turns'] as num?)?.toInt() ?? 0,
+        friendDays: (j['friend_days'] as num?)?.toInt() ?? 0,
+        friendAlerts: ((j['friend_alerts'] as List?) ?? []).map((e) => '$e').toList(),
+      );
+}
+
+/// Câu trả lời của Cú trong Góc tâm sự.
+class FriendReply {
+  final String say;
+  final String owlMood;
+  final bool suggestBreathing;
+  final String crisis; // self_harm | abuse | ''
+  final String hotline;
+  const FriendReply(this.say, this.owlMood, this.suggestBreathing, this.crisis, this.hotline);
+
+  factory FriendReply.fromJson(Map<String, dynamic> j) => FriendReply(
+        '${j['say'] ?? ''}',
+        '${j['owl_mood'] ?? 'listening'}',
+        j['suggest_breathing'] == true,
+        '${j['crisis'] ?? ''}',
+        '${j['hotline'] ?? ''}',
       );
 }

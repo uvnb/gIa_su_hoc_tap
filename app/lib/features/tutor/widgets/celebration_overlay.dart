@@ -16,8 +16,7 @@ class CelebrationOverlay extends StatefulWidget {
 }
 
 class _CelebrationOverlayState extends State<CelebrationOverlay> with SingleTickerProviderStateMixin {
-  late final AnimationController _c =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 2600));
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600));
   final _rnd = math.Random();
   List<_Piece> _pieces = [];
 
@@ -90,7 +89,13 @@ class _Piece {
   final double x, speed, drift, spin;
   final Color color;
   final bool star;
-  _Piece({required this.x, required this.speed, required this.drift, required this.spin, required this.color, required this.star});
+  _Piece(
+      {required this.x,
+      required this.speed,
+      required this.drift,
+      required this.spin,
+      required this.color,
+      required this.star});
 }
 
 class _ConfettiPainter extends CustomPainter {

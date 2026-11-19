@@ -106,7 +106,8 @@ class _CropScreenState extends ConsumerState<CropScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: bad ? AppColors.orange : Colors.white,
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: bad ? AppColors.orange : Colors.white,
                             foregroundColor: bad ? Colors.white : AppColors.ink),
                         onPressed: () => context.pushReplacement('/capture', extra: widget.subject),
                         child: const Text('📸 Chụp lại'),
@@ -124,7 +125,8 @@ class _CropScreenState extends ConsumerState<CropScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: bad ? Colors.white : AppColors.success,
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: bad ? Colors.white : AppColors.success,
                             foregroundColor: bad ? AppColors.ink : Colors.white),
                         onPressed: _preview == null ? null : () => _send(),
                         child: const Text('✅ Gửi phần đã chọn'),
@@ -204,8 +206,8 @@ class _ShadePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final outer = Path()..addRect(Offset.zero & size);
     final inner = Path()..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(8)));
-    canvas.drawPath(Path.combine(ui.PathOperation.difference, outer, inner),
-        Paint()..color = Colors.black.withValues(alpha: 0.45));
+    canvas.drawPath(
+        Path.combine(ui.PathOperation.difference, outer, inner), Paint()..color = Colors.black.withValues(alpha: 0.45));
     canvas.drawRRect(
         RRect.fromRectAndRadius(rect, const Radius.circular(8)),
         Paint()

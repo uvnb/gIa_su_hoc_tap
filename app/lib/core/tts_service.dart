@@ -1,33 +1,48 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
-/// Giọng Cú (TTS trên máy – miễn phí, mục 12.1). Cần "Giọng Tiếng Việt" cho Google Text-to-Speech.
+import 'neural_tts.dart';
+
+/// Giọng Cú.
 ///
-/// GIỮ GIỌNG ĐÃ CHỌN: mọi câu nói đều chờ áp xong giọng/tốc độ/cao độ đã lưu rồi mới đọc
-/// (trước đây câu chào lúc mở app đọc bằng giọng mặc định vì app nói trước khi kịp áp giọng).
-/// Giọng được áp lại khi app quay lại tiền cảnh, sau khi đọc tiếng Anh, và định kỳ (phòng khi
-/// dịch vụ TTS của Android khởi động lại làm mất giọng).
+/// TIẾNG VIỆT: giọng người thật tổng hợp bằng mô hình mã nguồn mở Piper chạy ngay trên máy
+/// ([NeuralTts]) – tự nhiên hơn hẳn giọng máy của Android, không cần mạng, không cần cài thêm gì.
+/// Chỉ khi mô hình không chạy được trên máy (rất hiếm) mới dùng tạm giọng tiếng Việt của Android.
+///
+/// TIẾNG ANH (đảo Tiếng Anh): giọng tiếng Anh trên máy của Android.
+///
+/// Kiểu giọng (tốc độ / cao độ) bố mẹ chọn được lưu và áp cho mọi câu, kể cả sau khi tắt mở lại app.
 class TtsService with WidgetsBindingObserver {
   TtsService() {
     WidgetsBinding.instance.addObserver(this);
   }
 
   final _tts = FlutterTts();
+  final _neural = NeuralTts();
+  AudioPlayer? _player;
   final speaking = ValueNotifier<bool>(false);
   bool available = false;
   bool englishAvailable = false;
+
+  /// true khi giọng tự nhiên đã sẵn sàng (Cú đang dùng giọng người thật).
+  final natural = ValueNotifier<bool>(false);
 
   final _ready = Completer<void>();
   double _rate = 0.42;
   double _pitch = 1.35;
   String _voice = '';
-  bool _dirty = true; // cần áp lại giọng tiếng Việt trước câu nói tới
+  bool _dirty = true; // cần áp lại giọng tiếng Việt dự phòng trước câu nói tới
   DateTime _appliedAt = DateTime.fromMillisecondsSinceEpoch(0);
   Future<void> _lock = Future.value(); // tuần tự hóa các lệnh nói / đổi giọng
   List<Map<String, String>>? _voicesCache;
+  int _gen = 0; // tăng mỗi lần nói mới / dừng → câu cũ tự bỏ
+  Completer<void>? _playing;
+  late final Future<bool> _neuralStart;
 
   /// Xong khi đã áp giọng đã lưu lần đầu.
   Future<void> get ready => _ready.future;
@@ -36,6 +51,19 @@ class TtsService with WidgetsBindingObserver {
     _rate = rate;
     _pitch = pitch;
     _voice = voice;
+    _neuralStart = _neural.start().then((ok) {
+      natural.value = ok;
+      debugPrint(ok ? 'Cú: dùng giọng tự nhiên (Piper)' : 'Cú: giọng tự nhiên không chạy được – dùng giọng dự phòng');
+      return ok;
+    });
+    if (!kIsWeb) {
+      final p = AudioPlayer();
+      _player = p;
+      p.onPlayerComplete.listen((_) => _donePlaying());
+      unawaited(p
+          .setAudioContext(AudioContextConfig(focus: AudioContextConfigFocus.mixWithOthers).build())
+          .catchError((Object e) => debugPrint('Giọng Cú – âm thanh: $e')));
+    }
     try {
       final ok = await _tts.isLanguageAvailable('vi-VN');
       available = ok == true || ok == 1;
@@ -57,9 +85,10 @@ class TtsService with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) _dirty = true;
+    if (state == AppLifecycleState.paused) unawaited(stop());
   }
 
-  /// Đổi tốc độ / cao độ / giọng (Góc phụ huynh). Lưu lại để áp lại bất cứ lúc nào cần.
+  /// Đổi tốc độ / cao độ (Góc phụ huynh). Lưu lại để áp cho mọi câu sau.
   Future<void> apply({required double rate, required double pitch, String voice = ''}) async {
     _rate = rate;
     _pitch = pitch;
@@ -67,14 +96,17 @@ class TtsService with WidgetsBindingObserver {
     await _run(_applyVietnamese);
   }
 
+  /// Tốc độ cho giọng tự nhiên (thang của Android: 0.5 ≈ bình thường).
+  double get _neuralSpeed => (_rate / 0.46).clamp(0.7, 1.4);
+
+  /// Cao độ cho giọng tự nhiên – nâng nhẹ hơn giọng máy để không bị "the thé".
+  double get _neuralPitch => (1 + (_pitch - 1) * 0.3).clamp(0.9, 1.2);
+
   Future<void> _applyVietnamese() async {
     await _tts.setLanguage('vi-VN');
     await _tts.setSpeechRate(_rate);
     await _tts.setPitch(_pitch);
-    if (_voice.isNotEmpty) {
-      final ok = await setVoice(_voice);
-      if (!ok) debugPrint('TTS: chưa tìm thấy giọng $_voice – dùng giọng tiếng Việt mặc định');
-    }
+    if (_voice.isNotEmpty) await setVoice(_voice);
     _dirty = false;
     _appliedAt = DateTime.now();
   }
@@ -97,9 +129,6 @@ class TtsService with WidgetsBindingObserver {
       await _applyVietnamese();
     }
   }
-
-  /// Các giọng tiếng Việt có trên máy (Google TTS có vài giọng nữ/nam, bản trên máy và bản cần mạng).
-  Future<List<Map<String, String>>> vietnameseVoices() => voicesFor('vi');
 
   Future<List<Map<String, String>>> voicesFor(String lang) async {
     try {
@@ -124,7 +153,7 @@ class TtsService with WidgetsBindingObserver {
     return list;
   }
 
-  /// Đặt giọng theo tên. Trả true nếu máy nhận giọng đó.
+  /// Đặt giọng Android theo tên (chỉ dùng cho giọng dự phòng). Trả true nếu máy nhận giọng đó.
   Future<bool> setVoice(String name) async {
     try {
       if (name.isEmpty) {
@@ -145,15 +174,22 @@ class TtsService with WidgetsBindingObserver {
   }
 
   static String _clean(String text) =>
-      text.replaceAll(RegExp(r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]', unicode: true), '').trim();
+      text.replaceAll(RegExp(r'[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]', unicode: true), '').trim();
 
-  /// Đọc to bằng giọng Cú đã chọn. Bỏ emoji để TTS không đọc tên biểu tượng.
+  /// Đọc to bằng giọng Cú. Bỏ emoji để không đọc tên biểu tượng. Câu mới luôn ngắt câu đang nói.
   Future<void> say(String text) async {
     final clean = _clean(text);
     if (clean.isEmpty) return;
+    final gen = ++_gen;
+    await _stopOutput();
     await ready.timeout(const Duration(seconds: 6), onTimeout: () {});
-    await _tts.stop();
     await _run(() async {
+      if (gen != _gen) return;
+      // Lần đầu mở app: chờ giọng tự nhiên nạp xong (vài giây) thay vì nói bằng giọng máy.
+      final ok = await _neuralStart.timeout(const Duration(seconds: 25), onTimeout: () => false);
+      if (gen != _gen) return;
+      if (ok && await _sayNatural(clean, gen)) return;
+      if (gen != _gen) return;
       await _ensureVietnamese();
       speaking.value = true;
       try {
@@ -164,14 +200,70 @@ class TtsService with WidgetsBindingObserver {
     });
   }
 
-  /// Đọc tiếng Anh (đảo Tiếng Anh) bằng giọng tiếng Anh trên máy, rồi trả lại đúng giọng Cú đã chọn.
+  /// Đọc từng câu: phát câu này trong lúc tạo sẵn câu sau. Trả false nếu câu đầu không tạo được
+  /// (để dùng giọng dự phòng).
+  Future<bool> _sayNatural(String text, int gen) async {
+    final player = _player;
+    if (player == null) return false;
+    final parts = splitSentences(normalizeVietnamese(text));
+    if (parts.isEmpty) return true;
+    final speed = _neuralSpeed;
+    final pitch = _neuralPitch;
+    speaking.value = true;
+    try {
+      Future<String?>? next = _neural.synthFile(parts.first, speed: speed, pitch: pitch);
+      for (var i = 0; i < parts.length; i++) {
+        final path = await next;
+        if (gen != _gen) return true;
+        if (path == null) return i > 0;
+        next = i + 1 < parts.length ? _neural.synthFile(parts[i + 1], speed: speed, pitch: pitch) : null;
+        await _playFile(player, path, gen);
+        if (gen != _gen) return true;
+      }
+      return true;
+    } catch (e) {
+      debugPrint('Giọng tự nhiên lỗi khi đọc: $e');
+      return false;
+    } finally {
+      if (gen == _gen) speaking.value = false;
+    }
+  }
+
+  Future<void> _playFile(AudioPlayer player, String path, int gen) async {
+    final done = Completer<void>();
+    _playing = done;
+    // thời lượng = (kích thước - 44 byte đầu) / 2 byte / 22050 mẫu mỗi giây
+    final ms = ((File(path).lengthSync() - 44) / 2 / 22.05).round();
+    await player.play(DeviceFileSource(path), volume: 1.0);
+    await done.future.timeout(Duration(milliseconds: ms + 2500), onTimeout: () {});
+    if (identical(_playing, done)) _playing = null;
+  }
+
+  void _donePlaying() {
+    final p = _playing;
+    if (p != null && !p.isCompleted) p.complete();
+  }
+
+  Future<void> _stopOutput() async {
+    try {
+      await _player?.stop();
+    } catch (_) {}
+    _donePlaying();
+    try {
+      await _tts.stop();
+    } catch (_) {}
+  }
+
+  /// Đọc tiếng Anh (đảo Tiếng Anh) bằng giọng tiếng Anh trên máy.
   Future<void> sayEnglish(String text, {bool slow = false}) async {
     final clean = _clean(text);
     if (clean.isEmpty) return;
+    final gen = ++_gen;
+    await _stopOutput();
     await ready.timeout(const Duration(seconds: 6), onTimeout: () {});
-    await _tts.stop();
     await _run(() async {
-      _dirty = true; // sau khi nói tiếng Anh phải áp lại giọng Việt
+      if (gen != _gen) return;
+      _dirty = true; // sau khi nói tiếng Anh phải áp lại giọng Việt dự phòng
       try {
         await _tts.setLanguage('en-US');
         // ưu tiên giọng tiếng Anh "trên máy" (không cần mạng, luôn giống nhau)
@@ -188,13 +280,13 @@ class TtsService with WidgetsBindingObserver {
         debugPrint('TTS tiếng Anh lỗi: $e');
       } finally {
         speaking.value = false;
-        await _applyVietnamese();
       }
     });
   }
 
   Future<void> stop() async {
-    await _tts.stop();
+    _gen++;
+    await _stopOutput();
     speaking.value = false;
   }
 }

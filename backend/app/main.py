@@ -24,9 +24,10 @@ from fastapi.staticfiles import StaticFiles
 
 from . import store
 from .config import TIERS, settings
-from .models import (DeviceRegistration, MysteryBox, Owl, ParentAnswer, ParentReport, ProblemBrief, ReportItem,
+from .models import (DeviceRegistration, FriendRequest, FriendResponse, MysteryBox, Owl, ParentAnswer,
+                     ParentReport, ProblemBrief, ReportItem,
                      SelectRequest, SessionRef, StartResponse, TurnRequest, TurnResponse)
-from .pipeline import safety, solver, tutor
+from .pipeline import friend, safety, solver, tutor
 from .providers import request_keys, router
 from .providers.base import ProviderError, ProviderRefusal
 
@@ -36,7 +37,7 @@ log = logging.getLogger("cutomo")
 PROMPTS: dict[str, str] = {p.stem: p.read_text(encoding="utf-8")
                            for p in (Path(__file__).parent / "prompts").glob("*.md")}
 MYSTERY = json.loads((Path(__file__).parent / "content" / "mystery_box.json").read_text(encoding="utf-8"))
-SUBJECTS = ("math", "vietnamese", "english", "science")
+SUBJECTS = ("math", "vietnamese", "english", "science", "vietnam")
 MAX_IMAGE_BYTES = 6 * 1024 * 1024
 
 
@@ -352,6 +353,32 @@ def challenge(body: SessionRef):
                          owl=Owl(say="Thử thách mới đây! " + out["owl"]["say"], mood="asking"), state="tutoring")
 
 
+@app.post("/v1/friend/chat", response_model=FriendResponse, dependencies=[Depends(require_app)])
+def friend_chat(body: FriendRequest):
+    """💛 Góc tâm sự: Cú lắng nghe như một người bạn (nhiều lớp an toàn – xem pipeline/friend.py).
+    KHÔNG lưu nội dung; chỉ ghi số lượt, tâm trạng và loại cảnh báo theo ngày để bố mẹ biết khi cần quan tâm."""
+    provider = body.provider if router.configured(body.provider) else None
+    out = friend.chat(nickname=body.nickname, grade=body.grade, mood=body.mood, message=body.message,
+                      history=[m.model_dump() for m in body.history], prompts=PROMPTS,
+                      provider=provider, tier=body.tier)
+    if body.device_id:
+        sid = friend.day_session_id(body.device_id, body.child_id)
+        now = time.time()
+        sess = store.load(sid) or {"device_id": body.device_id, "child_id": body.child_id, "created_at": now,
+                                   "subject": "wellbeing", "grade": body.grade, "state": "tam_su", "turns": 0,
+                                   "problem": {"type": "tam_su", "text": "💬 Góc tâm sự"}, "moods": [],
+                                   "safety_flags": []}
+        sess["turns"] = int(sess.get("turns", 0)) + 1
+        if body.mood and body.mood not in sess["moods"]:
+            sess["moods"].append(body.mood)
+        if out.get("flag"):
+            sess["safety_flags"].append(out["flag"])
+            log.warning("Góc tâm sự: cảnh báo %s (thiết bị %s…)", out["flag"], body.device_id[:6])
+        store.save(sid, sess)
+    return FriendResponse(say=out["say"], owl_mood=out["owl_mood"], suggest_breathing=out["suggest_breathing"],
+                          crisis=out.get("crisis", ""), hotline=out.get("hotline", ""))
+
+
 @app.get("/v1/mystery-box", response_model=MysteryBox, dependencies=[Depends(require_app)])
 def mystery_box(grade: int = Query(1, ge=1, le=5), date: Optional[str] = None):
     """FR-42: một câu đố/câu hỏi khám phá mỗi ngày (cùng ngày → cùng câu)."""
@@ -375,7 +402,9 @@ def parent_report(device_id: str, child_id: str, period: str = Query("day", patt
         since = start_of_day
     else:
         since = now - 7 * 86400
-    logs = store.problem_logs(device_id, child_id, since)
+    all_logs = store.problem_logs(device_id, child_id, since)
+    friend_logs = [r for r in all_logs if r.get("problem_type") == "tam_su"]
+    logs = [r for r in all_logs if r.get("problem_type") != "tam_su"]
 
     def minutes_of(r: dict) -> float:
         return min(30.0, max(1.0, (r["updated_at"] - r["started_at"]) / 60))
@@ -413,6 +442,9 @@ def parent_report(device_id: str, child_id: str, period: str = Query("day", patt
         safety_alerts=sum(1 for r in logs if r["safety_flag"]),
         by_day=[{"date": k, "minutes": int(round(v["minutes"])), "problems": v["problems"], "solved": v["solved"]}
                 for k, v in sorted(by_day.items())],
+        friend_turns=sum(int(r.get("turns") or 0) for r in friend_logs),
+        friend_days=len(friend_logs),
+        friend_alerts=sorted({f for r in friend_logs for f in (r.get("safety_flag") or "").split(",") if f}),
     )
 
 

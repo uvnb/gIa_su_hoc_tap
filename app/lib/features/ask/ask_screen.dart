@@ -58,11 +58,12 @@ class _AskScreenState extends ConsumerState<AskScreen> {
                   const SizedBox(width: 20),
                   Text('Hỏi Cú', style: titleStyle(34)),
                   const Spacer(),
-                  for (final s in const ['math', 'vietnamese', 'english', 'science'])
+                  for (final s in const ['math', 'vietnamese', 'english', 'vietnam', 'science'])
                     Padding(
-                      padding: const EdgeInsets.only(left: 10),
+                      padding: const EdgeInsets.only(left: 6),
                       child: ChoiceChip(
-                        label: Text(subjectName(s), style: bodyStyle(20, AppColors.ink, FontWeight.w800)),
+                        label: Text(s == 'vietnam' ? '🇻🇳 Việt Nam' : subjectName(s),
+                            style: bodyStyle(17, AppColors.ink, FontWeight.w800)),
                         selected: _subject == s,
                         selectedColor: AppColors.sun,
                         onSelected: (_) => setState(() => _subject = s),

@@ -277,8 +277,8 @@ class TutorController extends StateNotifier<TutorState> {
   Future<void> sendScratch(Uint8List png) async {
     final sid = state.sessionId;
     if (sid == null || state.busy) return;
-    state = state.copyWith(bubbles: [...state.bubbles, const Bubble(false, '✏️ (Bạn gửi bảng nháp)')],
-        busy: true, mood: 'thinking');
+    state = state.copyWith(
+        bubbles: [...state.bubbles, const Bubble(false, '✏️ (Bạn gửi bảng nháp)')], busy: true, mood: 'thinking');
     try {
       _applyTurn(await _api.scratch(sid, png));
     } on ApiOffline {
@@ -354,7 +354,8 @@ class TutorController extends StateNotifier<TutorState> {
     try {
       final r = await _api.challenge(sid);
       _applyStart(r);
-      state = state.copyWith(problems: r.problems, doneIds: const {}, currentId: r.problems.isNotEmpty ? r.problems.first.id : null);
+      state = state.copyWith(
+          problems: r.problems, doneIds: const {}, currentId: r.problems.isNotEmpty ? r.problems.first.id : null);
     } on ApiOffline {
       _offline();
     } on ApiError {

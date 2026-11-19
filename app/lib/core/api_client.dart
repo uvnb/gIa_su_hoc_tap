@@ -201,6 +201,32 @@ class ApiClient {
   // ------------------------------------------------------------------ Góc phụ huynh
   Options _parent(String token) => Options(headers: {'x-parent-token': token});
 
+  /// 💛 Góc tâm sự: gửi lời bé + vài câu gần nhất (máy chủ không lưu nội dung).
+  Future<FriendReply> friendChat({
+    required String message,
+    required List<Map<String, String>> history,
+    String mood = '',
+    String nickname = 'bạn',
+    int grade = 1,
+    String deviceId = '',
+    String childId = '',
+    String provider = '',
+    String tier = '',
+  }) async {
+    final r = await _send(() => _dio.post('/v1/friend/chat', data: {
+          'message': message,
+          'history': history,
+          'mood': mood,
+          'nickname': nickname,
+          'grade': grade,
+          'device_id': deviceId,
+          'child_id': childId,
+          if (provider.isNotEmpty) 'provider': provider,
+          if (tier.isNotEmpty) 'tier': tier,
+        }));
+    return FriendReply.fromJson(_map(r));
+  }
+
   Future<ParentReport> parentReport(String deviceId, String childId, String token, {String period = 'day'}) async {
     final r = await _send(() => _dio.get('/v1/parent/report',
         queryParameters: {'device_id': deviceId, 'child_id': childId, 'period': period}, options: _parent(token)));

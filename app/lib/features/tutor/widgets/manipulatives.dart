@@ -104,7 +104,10 @@ class _CountingToolState extends ConsumerState<CountingTool> {
     final a = widget.a, b = widget.b;
     switch (widget.op) {
       case '×':
-        _items = [for (var g = 0; g < a; g++) for (var i = 0; i < b; i++) _Item(g)];
+        _items = [
+          for (var g = 0; g < a; g++)
+            for (var i = 0; i < b; i++) _Item(g)
+        ];
       case '-':
       case ':':
         _items = [for (var i = 0; i < a; i++) _Item(0)];
@@ -176,11 +179,8 @@ class _CountingToolState extends ConsumerState<CountingTool> {
           children: [
             Positioned(bottom: 0, child: child),
             if (faded)
-              Positioned(
-                  bottom: widget.sticks ? 20 : 8,
-                  child: Text('✖', style: titleStyle(26, AppColors.think))),
-            if (it.count != null)
-              Positioned(top: 0, child: Text('${it.count}', style: titleStyle(18, AppColors.ink))),
+              Positioned(bottom: widget.sticks ? 20 : 8, child: Text('✖', style: titleStyle(26, AppColors.think))),
+            if (it.count != null) Positioned(top: 0, child: Text('${it.count}', style: titleStyle(18, AppColors.ink))),
           ],
         ),
       ),
@@ -257,7 +257,7 @@ class _CountingToolState extends ConsumerState<CountingTool> {
                               border: Border.all(color: AppColors.think, width: 3),
                             ),
                             child: Wrap(children: [
-                              for (final it in g)
+                              for (final _ in g)
                                 Padding(
                                   padding: const EdgeInsets.all(2),
                                   child: Container(
@@ -347,9 +347,13 @@ class _Base10ToolState extends ConsumerState<Base10Tool> {
           border: Border.all(color: Colors.white, width: 1),
         ),
         child: rod
-            ? Column(children: List.generate(10, (_) => Expanded(child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 0.5),
-                color: Colors.white.withValues(alpha: 0.25)))))
+            ? Column(
+                children: List.generate(
+                    10,
+                    (_) => Expanded(
+                        child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 0.5),
+                            color: Colors.white.withValues(alpha: 0.25)))))
             : null,
       ),
     );
@@ -485,8 +489,7 @@ class _ClockToolState extends State<ClockTool> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text('${h.toString().padLeft(2, '0')} giờ ${m.toString().padLeft(2, '0')} phút',
-                  style: titleStyle(26)),
+              Text('${h.toString().padLeft(2, '0')} giờ ${m.toString().padLeft(2, '0')} phút', style: titleStyle(26)),
               const SizedBox(height: 8),
               Wrap(spacing: 8, runSpacing: 8, alignment: WrapAlignment.center, children: [
                 OutlinedButton(onPressed: () => _add(-5), child: const Text('− 5 phút')),
@@ -528,10 +531,20 @@ class _ClockPainter extends CustomPainter {
     }
     final hourA = ((h % 12) + m / 60) * math.pi / 6 - math.pi / 2;
     final minA = m * math.pi / 30 - math.pi / 2;
-    canvas.drawLine(c, c + Offset(math.cos(hourA), math.sin(hourA)) * r * 0.5,
-        Paint()..color = AppColors.ink..strokeWidth = 8..strokeCap = StrokeCap.round);
-    canvas.drawLine(c, c + Offset(math.cos(minA), math.sin(minA)) * r * 0.75,
-        Paint()..color = AppColors.orange..strokeWidth = 5..strokeCap = StrokeCap.round);
+    canvas.drawLine(
+        c,
+        c + Offset(math.cos(hourA), math.sin(hourA)) * r * 0.5,
+        Paint()
+          ..color = AppColors.ink
+          ..strokeWidth = 8
+          ..strokeCap = StrokeCap.round);
+    canvas.drawLine(
+        c,
+        c + Offset(math.cos(minA), math.sin(minA)) * r * 0.75,
+        Paint()
+          ..color = AppColors.orange
+          ..strokeWidth = 5
+          ..strokeCap = StrokeCap.round);
     canvas.drawCircle(c, 7, Paint()..color = AppColors.ink);
   }
 
@@ -561,7 +574,8 @@ class _RulerToolState extends State<RulerTool> {
     return LayoutBuilder(builder: (context, box) {
       final unit = (box.maxWidth - 20) / maxCm;
       return GestureDetector(
-        onTapDown: (d) => setState(() => _mark = ((d.localPosition.dx - 10) / unit).roundToDouble().clamp(0, maxCm.toDouble()).toDouble()),
+        onTapDown: (d) => setState(
+            () => _mark = ((d.localPosition.dx - 10) / unit).roundToDouble().clamp(0, maxCm.toDouble()).toDouble()),
         child: CustomPaint(
           size: Size(box.maxWidth, math.min(box.maxHeight, 170)),
           painter: _RulerPainter(maxCm, unit, widget.a, widget.b, widget.op, _mark),
@@ -587,7 +601,12 @@ class _RulerPainter extends CustomPainter {
     for (var i = 0; i <= maxCm; i++) {
       final x = x0 + i * unit;
       final big = i % 5 == 0;
-      canvas.drawLine(Offset(x, y0), Offset(x, y0 + (big ? 26 : 14)), Paint()..color = AppColors.ink..strokeWidth = 2);
+      canvas.drawLine(
+          Offset(x, y0),
+          Offset(x, y0 + (big ? 26 : 14)),
+          Paint()
+            ..color = AppColors.ink
+            ..strokeWidth = 2);
       if (big || maxCm <= 20) {
         final tp = TextPainter(text: TextSpan(text: '$i', style: bodyStyle(13)), textDirection: TextDirection.ltr)
           ..layout();
@@ -599,13 +618,17 @@ class _RulerPainter extends CustomPainter {
         Paint()..color = AppColors.sky);
     if (b > 0) {
       final start = op == '+' ? x0 + a * unit : x0;
-      canvas.drawRRect(
-          RRect.fromRectAndRadius(Rect.fromLTWH(start, y0 - 50, b * unit, 16), const Radius.circular(6)),
+      canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(start, y0 - 50, b * unit, 16), const Radius.circular(6)),
           Paint()..color = AppColors.orange);
     }
     if (mark != null) {
       final x = x0 + mark! * unit;
-      canvas.drawLine(Offset(x, 6), Offset(x, y0 + 60), Paint()..color = AppColors.think..strokeWidth = 4);
+      canvas.drawLine(
+          Offset(x, 6),
+          Offset(x, y0 + 60),
+          Paint()
+            ..color = AppColors.think
+            ..strokeWidth = 4);
     }
   }
 

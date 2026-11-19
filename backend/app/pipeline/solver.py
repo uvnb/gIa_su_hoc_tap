@@ -19,6 +19,7 @@ SUBJECT_NAMES = {
     "vietnamese": "Tiếng Việt",
     "english": "Tiếng Anh",
     "science": "Tự nhiên và Xã hội / Khoa học",
+    "vietnam": "Lịch sử, Địa lý và Văn hóa Việt Nam",
 }
 VALID_TOOLS = set(schemas.TOOLS)
 

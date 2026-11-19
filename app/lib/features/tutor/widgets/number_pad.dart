@@ -102,8 +102,7 @@ class _BigNumberPadState extends ConsumerState<BigNumberPad> {
             _btn('0'),
             _btn('✅', color: AppColors.success),
           ]),
-          if (extra)
-            Row(mainAxisSize: MainAxisSize.min, children: [_btn(',', width: 124), _btn('/', width: 124)]),
+          if (extra) Row(mainAxisSize: MainAxisSize.min, children: [_btn(',', width: 124), _btn('/', width: 124)]),
         ],
       ),
     );

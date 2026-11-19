@@ -29,6 +29,7 @@ dependencies:
   web: ^1.1.0
   record: ^7.2.0
   path_provider: ^2.1.6
+  sherpa_onnx: 1.13.8
 
 dev_dependencies:
   flutter_test:
@@ -40,3 +41,7 @@ flutter:
   assets:
     - assets/sounds/
     - assets/music/
+    - assets/tts/vi/
+    - assets/tts/vi/espeak-ng-data/
+    - assets/tts/vi/espeak-ng-data/lang/aav/
+    - assets/tts/vi/espeak-ng-data/lang/gmw/

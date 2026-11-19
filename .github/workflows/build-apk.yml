@@ -81,6 +81,9 @@ jobs:
           rm -f test/widget_test.dart
           python3 tool/patch_android.py --allow-http
 
+      - name: Tải giọng Việt tự nhiên (Piper vais1000, chạy trên máy)
+        run: python3 tool/fetch_tts_model.py
+
       - run: flutter pub get
 
       - name: Phân tích code
@@ -91,7 +94,7 @@ jobs:
         continue-on-error: true
 
       - name: Build APK
-        run: flutter build apk --release --dart-define=API_BASE_URL="$API_BASE_URL" --dart-define=APP_SECRET="$APP_SECRET"
+        run: flutter build apk --release --target-platform android-arm,android-arm64 --dart-define=API_BASE_URL="$API_BASE_URL" --dart-define=APP_SECRET="$APP_SECRET"
 
       - name: Đổi tên file
         run: cp build/app/outputs/flutter-apk/app-release.apk "cu-to-mo-${GITHUB_RUN_NUMBER}.apk"

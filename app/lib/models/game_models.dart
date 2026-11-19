@@ -162,8 +162,7 @@ const voicePurposes = [
       ['Chào con yêu, hôm nay học vui nhé', 'Mẹ chúc con học giỏi']),
 ];
 
-VoicePurpose purposeById(String id) =>
-    voicePurposes.firstWhere((p) => p.id == id, orElse: () => voicePurposes.first);
+VoicePurpose purposeById(String id) => voicePurposes.firstWhere((p) => p.id == id, orElse: () => voicePurposes.first);
 
 /// Đoán mục đích từ chú thích bố mẹ gõ (bố mẹ vẫn chọn lại được).
 String? guessPurpose(String caption) {

@@ -10,6 +10,7 @@ import 'features/break_time/sleep_screen.dart';
 import 'features/capture/capture_screen.dart';
 import 'features/capture/crop_screen.dart';
 import 'features/english/english_island_screen.dart';
+import 'features/friend/friend_screen.dart';
 import 'features/english/english_topic_screen.dart';
 import 'features/games/balloon/balloon_game_screen.dart';
 import 'features/games/memory/memory_game_screen.dart';
@@ -18,6 +19,7 @@ import 'features/games/games_hub_screen.dart';
 import 'features/games/runner/word_runner_screen.dart';
 import 'features/games/wish_screen.dart';
 import 'features/home/home_screen.dart';
+import 'features/vietnam/vietnam_island_screen.dart';
 import 'features/mystery/mystery_box_screen.dart';
 import 'features/offline/offline_practice_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
@@ -52,6 +54,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/practice', builder: (_, s) => OfflinePracticeScreen(subject: (s.extra as String?) ?? 'math')),
       GoRoute(path: '/break', builder: (_, __) => const BreakTimeScreen()),
       GoRoute(path: '/english', builder: (_, __) => const EnglishIslandScreen()),
+      GoRoute(
+          path: '/vietnam', builder: (_, s) => VietnamIslandScreen(initialTopic: (s.extra as String?) ?? 'history')),
+      GoRoute(path: '/friend', builder: (_, __) => const FriendScreen()),
       GoRoute(
         path: '/english/topic',
         builder: (_, s) => EnglishTopicScreen(topicId: (s.extra as String?) ?? 'animals'),

@@ -21,8 +21,7 @@ class MysteryBoxScreen extends ConsumerStatefulWidget {
 }
 
 class _MysteryBoxScreenState extends ConsumerState<MysteryBoxScreen> with SingleTickerProviderStateMixin {
-  late final AnimationController _shake =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+  late final AnimationController _shake = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
   int _taps = 0;
   Map<String, dynamic>? _item;
   bool _offline = false;
@@ -103,9 +102,7 @@ class _MysteryBoxScreenState extends ConsumerState<MysteryBoxScreen> with Single
                             children: [
                               Text(_loading ? '✨' : '🎁', style: const TextStyle(fontSize: 180)),
                               Text(
-                                _offline
-                                    ? 'Mạng đang nghỉ 😴'
-                                    : (_loading ? 'Đang mở…' : 'Chạm ${3 - _taps} lần nữa!'),
+                                _offline ? 'Mạng đang nghỉ 😴' : (_loading ? 'Đang mở…' : 'Chạm ${3 - _taps} lần nữa!'),
                                 style: titleStyle(30),
                               ),
                             ],

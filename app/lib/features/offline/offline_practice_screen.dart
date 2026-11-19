@@ -241,7 +241,8 @@ class _OfflinePracticeScreenState extends ConsumerState<OfflinePracticeScreen> {
                                       size: 72,
                                       onFinal: (t) => setState(() => _pending = t.isEmpty ? null : t),
                                     ),
-                                    ToolButton(emoji: '😵', label: 'Khó quá', color: AppColors.softThink, onTap: _tooHard),
+                                    ToolButton(
+                                        emoji: '😵', label: 'Khó quá', color: AppColors.softThink, onTap: _tooHard),
                                   ]),
                               ],
                             ],

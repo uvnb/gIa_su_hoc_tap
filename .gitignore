@@ -24,3 +24,6 @@ Thumbs.db
 
 # Ảnh mã QR sinh ra theo IP máy
 dist/
+
+# Giọng Việt tự nhiên (64 MB) – tải bằng app/tool/fetch_tts_model.py, không đưa vào git
+app/assets/tts/

@@ -22,8 +22,7 @@ class ChildProfile {
         stars: stars ?? this.stars,
       );
 
-  Map<String, dynamic> toMap() =>
-      {'id': id, 'nickname': nickname, 'grade': grade, 'avatar': avatar, 'stars': stars};
+  Map<String, dynamic> toMap() => {'id': id, 'nickname': nickname, 'grade': grade, 'avatar': avatar, 'stars': stars};
 
   factory ChildProfile.fromMap(Map<dynamic, dynamic> m) => ChildProfile(
         id: m['id'] as String,

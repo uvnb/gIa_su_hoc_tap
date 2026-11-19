@@ -173,7 +173,17 @@ def _scratch(system: str, user: str, image: Optional[bytes]) -> dict:
             "child_wrote_final": False}
 
 
+def _friend(system, user_text, image):
+    """Góc tâm sự (giả lập): lắng nghe, gọi tên cảm xúc, hỏi mở."""
+    last = user_text.lower().rsplit("bé:", 1)[-1]
+    sad = any(w in last for w in ("buồn", "sợ", "giận", "lo"))
+    say = ("Cú hiểu là bạn đang thấy không vui. Bạn kể thêm cho Cú nghe nhé?" if sad
+           else "Nghe vui quá! Điều gì làm bạn thích nhất vậy?")
+    return {"say": say, "owl_mood": "encouraging" if sad else "celebrating", "suggest_breathing": sad}
+
+
 DEFAULT_HANDLERS: dict[str, Handler] = {
+    "FRIEND": _friend,
     "SOLVER": _solver, "CHECKER": _checker, "TUTOR": _tutor, "GUARD": _guard,
     "EXPLAIN": _explain, "CHALLENGE": _challenge, "SCRATCH": _scratch,
 }

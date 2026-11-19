@@ -281,7 +281,8 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 6, 16, 8),
       child: Container(
-        decoration: BoxDecoration(color: AppColors.softSky.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(24)),
+        decoration:
+            BoxDecoration(color: AppColors.softSky.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(24)),
         child: Column(
           children: [
             Expanded(
@@ -403,7 +404,8 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
           ElevatedButton(
               onPressed: () => context.pushReplacement('/capture', extra: s.subject), child: const Text('📸 Chụp lại')),
           OutlinedButton(
-              onPressed: () => context.pushReplacement('/ask', extra: s.subject), child: const Text('🎤 Đọc đề cho Cú')),
+              onPressed: () => context.pushReplacement('/ask', extra: s.subject),
+              child: const Text('🎤 Đọc đề cho Cú')),
           OutlinedButton(onPressed: () => context.go('/home'), child: const Text('🏠 Về nhà')),
         ]);
       case TutorPhase.offline:

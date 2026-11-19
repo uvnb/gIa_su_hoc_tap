@@ -346,6 +346,7 @@ class OwlSpeech extends StatelessWidget {
 String subjectName(String s) => switch (s) {
       'vietnamese' => 'Tiếng Việt',
       'english' => 'Tiếng Anh',
+      'vietnam' => 'Việt Nam (Sử – Địa – Văn hóa)',
       'science' => 'Khám phá',
       _ => 'Toán',
     };

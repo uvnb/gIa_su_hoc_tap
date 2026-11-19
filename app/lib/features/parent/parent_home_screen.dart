@@ -243,6 +243,17 @@ class _ReportTabState extends ConsumerState<_ReportTab> {
                   _Kpi('👩‍🏫', '${r.parked}', 'để dành hỏi thầy cô'),
                   _Kpi('⭐', '${r.stars}', 'sao nỗ lực'),
                 ]),
+                _Card(
+                  title: '💛 Góc tâm sự',
+                  child: Text(
+                      r.friendTurns == 0
+                          ? 'Bé chưa ghé Góc tâm sự trong thời gian này.'
+                          : 'Bé đã trò chuyện với Cú ${r.friendTurns} lượt (${r.friendDays} ngày). '
+                              'Nội dung trò chuyện không được lưu để tôn trọng sự riêng tư của bé.'
+                              '${r.friendAlerts.isEmpty ? '' : '\n⚠️ Bé có nhắc tới: ${r.friendAlerts.map(_alertName).join(', ')}. '
+                                  'Bố mẹ hãy dành thời gian trò chuyện nhẹ nhàng với bé; nếu cần hỗ trợ gọi 111 (miễn phí).'}',
+                      style: bodyStyle(19)),
+                ),
                 if (r.safetyAlerts > 0)
                   _Card(
                     title: '⚠️ Cần bố mẹ lưu ý',
@@ -300,6 +311,13 @@ class _ReportTabState extends ConsumerState<_ReportTab> {
 }
 
 String _typeName(String t) => t.replaceAll('_', ' ');
+
+String _alertName(String a) => switch (a) {
+      'self_harm' => 'ý nghĩ làm hại bản thân',
+      'abuse' => 'bị làm đau / bị đe dọa',
+      'danger' => 'ý định làm việc nguy hiểm',
+      _ => a,
+    };
 
 class _Kpi extends StatelessWidget {
   const _Kpi(this.emoji, this.value, this.label);
@@ -620,13 +638,23 @@ class _SafetyTab extends StatelessWidget {
             'Ứng dụng chỉ lưu biệt danh, lớp, sao và lịch sử học. Ảnh bài tập không được lưu trên máy chủ. '
                 'Giọng nói được nhận dạng ngay trên máy. Bố mẹ có thể xóa dữ liệu của từng bé ở thẻ "Hồ sơ bé".'),
         item(
+            '💛 Góc tâm sự – nguyên tắc an toàn',
+            'Cú là người bạn lắng nghe: gọi tên cảm xúc, an ủi, gợi ý cách lành mạnh (hít thở, vẽ, nghỉ ngơi, kể với người lớn). '
+                'Cú KHÔNG BAO GIỜ xúi bé làm việc nguy hiểm, không bảo bé giữ bí mật với bố mẹ, không hỏi địa chỉ, số điện thoại, '
+                'không khuyên dùng thuốc. Có 3 lớp an toàn: (1) câu bé nói có dấu hiệu nguy hiểm (muốn làm hại bản thân, bị đánh, '
+                'bị xâm hại, định làm việc nguy hiểm) → Cú trả lời bằng câu soạn sẵn, hướng bé kể ngay với bố mẹ, thầy cô và gọi '
+                'Tổng đài bảo vệ trẻ em 111 (miễn phí); (2) lời dặn chặt chẽ cho AI; (3) câu AI trả lời nếu có dấu hiệu không an '
+                'toàn sẽ bị thay bằng câu an toàn. Nội dung trò chuyện KHÔNG được lưu; bố mẹ chỉ thấy số lượt và cảnh báo trong Báo cáo.'),
+        item(
             '🦉 Vì sao Cú không nói đáp án?',
             'Cú dùng phương pháp hỏi gợi mở: chia nhỏ vấn đề, đưa ví dụ tương tự, dùng que tính… để bé TỰ tìm ra. '
                 'Nếu bé bí quá 12 lượt, Cú đề nghị "để dành hỏi thầy cô" và ghi lại trong báo cáo để bố mẹ kèm bé.'),
         item(
-            '🗣️ Chuẩn bị giọng nói',
-            'Cài đặt → Hệ thống → Ngôn ngữ & nhập liệu → Đầu ra chuyển văn bản thành giọng nói → chọn Google và tải giọng Tiếng Việt. '
-                'Cập nhật "Speech Services by Google" và tải gói Tiếng Việt ngoại tuyến nếu có.'),
+            '🗣️ Giọng nói của Cú',
+            'Tiếng Việt: giọng người thật tổng hợp bằng mô hình mã nguồn mở Piper (vais1000), chạy ngay trên máy tính bảng – '
+                'không cần mạng, không gửi câu chữ đi đâu, không cần cài thêm gì. Lần đầu mở app sau khi cài, Cú cần vài giây để nạp giọng. '
+                'Tiếng Anh (đảo Tiếng Anh) dùng giọng tiếng Anh có sẵn của máy: nếu chưa có, vào Cài đặt → Ngôn ngữ & nhập liệu → '
+                'Chuyển văn bản thành giọng nói → Google → tải "English (United States)".'),
       ],
     );
   }
