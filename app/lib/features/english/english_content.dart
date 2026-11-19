@@ -143,7 +143,7 @@ const enTopics = <EnTopic>[
     EnWord('🌳', 'tree', 'cái cây', 'tri'),
     EnWord('🌸', 'flower', 'bông hoa', 'phla-ơ'),
     EnWord('🌊', 'sea', 'biển', 'xi'),
-    EnWord('🌬️', 'wind', 'gió', 'uyn-đ'),
+    EnWord('💨', 'wind', 'gió', 'uyn-đ'),
     EnWord('❄️', 'snow', 'tuyết', 'xnâu'),
   ]),
   EnTopic('toys', '🧸', 'Toys', 'Đồ chơi', 3, [
