@@ -185,7 +185,7 @@ class _FriendScreenState extends ConsumerState<FriendScreen> {
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF8BC5FF)),
                       onPressed: () => setState(() => _breathing = true),
-                      child: const Text('🌬️ Thở cùng Cú'),
+                      child: const Text('🍃 Thở cùng Cú'),
                     ),
                   ),
                 ]),
@@ -258,7 +258,7 @@ class _FriendScreenState extends ConsumerState<FriendScreen> {
                   child: PopIn(
                     child: ActionChip(
                       backgroundColor: const Color(0xFFBDE3FF),
-                      label: Text('🌬️ Thở cùng Cú nhé?',
+                      label: Text('🍃 Thở cùng Cú nhé?',
                           style: bodyStyle(compact ? 16 : 18, AppColors.ink, FontWeight.w800)),
                       onPressed: () => setState(() {
                         _offerBreath = false;
@@ -442,7 +442,7 @@ class _BreathingState extends ConsumerState<_Breathing> with SingleTickerProvide
           },
         ),
         const SizedBox(height: 24),
-        Text(_inhale ? 'Hít vào… 🌬️' : 'Thở ra… 😌', style: titleStyle(40, Colors.white)),
+        Text(_inhale ? 'Hít vào… 🍃' : 'Thở ra… 😌', style: titleStyle(40, Colors.white)),
         Text('Lần ${_round.clamp(1, 3)}/3', style: bodyStyle(20, Colors.white)),
         const SizedBox(height: 16),
         TextButton(

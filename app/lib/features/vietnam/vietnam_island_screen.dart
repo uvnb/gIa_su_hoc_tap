@@ -84,11 +84,14 @@ class _VietnamIslandScreenState extends ConsumerState<VietnamIslandScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Flexible(
-                    child: Text('🇻🇳 Việt Nam quê em',
-                        overflow: TextOverflow.ellipsis, style: titleStyle(compact ? 28 : 36, const Color(0xFFD62828))),
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(compact ? '🇻🇳 Việt Nam' : '🇻🇳 Việt Nam quê em',
+                          style: titleStyle(compact ? 28 : 36, const Color(0xFFD62828))),
+                    ),
                   ),
-                  const Spacer(),
                   for (final t in vnTopics)
                     Padding(
                       padding: const EdgeInsets.only(left: 6),
